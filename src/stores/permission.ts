@@ -8,12 +8,13 @@ import {
 import type { PermissionNode, RoleItem } from "@/types/permission";
 
 export const usePermissionStore = defineStore("permission", () => {
-  const permissionTree = ref<PermissionNode[]>([]);
-  const roles = ref<RoleItem[]>([]);
+  const permissionTree = ref<any>([]);
+  const roles = ref<any>([]);
   const activeRoleId = ref<number>(0);
 
   const activeRole = computed(
-    () => roles.value.find((role) => role.id === activeRoleId.value) ?? null,
+    () =>
+      roles.value.find((role: any) => role.id === activeRoleId.value) ?? null,
   );
 
   async function loadCatalog() {

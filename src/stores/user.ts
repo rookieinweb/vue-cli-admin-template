@@ -25,7 +25,7 @@ export const useUserStore = defineStore("user", () => {
   );
 
   async function login(form: LoginForm) {
-    const result = await loginApi(form);
+    const result: any = await loginApi(form);
     token.value = result.token;
     userInfo.value = result.user;
     writeString(TOKEN_KEY, result.token);
