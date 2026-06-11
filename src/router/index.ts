@@ -1,25 +1,78 @@
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import HomeView from '../views/HomeView.vue'
+import {
+  createRouter,
+  createWebHistory,
+  type RouteRecordRaw,
+} from "vue-router";
+import { pinia } from "@/stores";
+import { useUserStore } from "@/stores/user";
 
 const routes: Array<RouteRecordRaw> = [
   {
-    path: '/',
-    name: 'home',
-    component: HomeView
+    path: "/",
+    redirect: "/admin/dashboard",
   },
   {
-    path: '/about',
-    name: 'about',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/AboutView.vue')
-  }
-]
+    path: "/login",
+    name: "login",
+    component: () => import("@/views/auth/LoginView.vue"),
+    meta: { public: true, title: "登录" },
+  },
+  {
+    path: "/register",
+    name: "register",
+    component: () => import("@/views/auth/RegisterView.vue"),
+    meta: { public: true, title: "注册" },
+  },
+  {
+    path: "/admin",
+    component: () => import("@/layouts/AdminLayout.vue"),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: "",
+        redirect: "/admin/dashboard",
+      },
+      {
+        path: "dashboard",
+        name: "dashboard",
+        component: () => import("@/views/dashboard/DashboardView.vue"),
+        meta: { title: "控制台" },
+      },
+      {
+        path: "permission",
+        name: "permission",
+        component: () => import("@/views/system/PermissionView.vue"),
+        meta: { title: "权限管理" },
+      },
+    ],
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/login",
+  },
+];
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
-  routes
-})
+  routes,
+});
 
-export default router
+router.beforeEach((to) => {
+  const userStore = useUserStore(pinia);
+  const hasToken = Boolean(userStore.token);
+
+  if (to.meta.requiresAuth && !hasToken) {
+    return {
+      path: "/login",
+      query: { redirect: to.fullPath },
+    };
+  }
+
+  if (to.meta.public && hasToken) {
+    return "/admin/dashboard";
+  }
+
+  return true;
+});
+
+export default router;
