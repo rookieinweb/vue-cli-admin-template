@@ -29,7 +29,13 @@ export async function loginApi(form: LoginForm) {
 }
 
 export async function registerApi(form: RegisterForm) {
-  const { data } = await request.post<ApiResult<null>>("/auth/register", form);
+  const { confirmPassword, ...payload } = form;
+  void confirmPassword;
+
+  const { data } = await request.post<ApiResult<null>>(
+    "/user/register",
+    payload,
+  );
   return unwrap(data);
 }
 
