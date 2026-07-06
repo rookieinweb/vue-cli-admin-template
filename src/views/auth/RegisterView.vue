@@ -1,6 +1,6 @@
 <template>
   <div class="register-page">
-    <section class="register-page__panel register-page__panel--form">
+    <section class="register-page__form-wrap">
       <div class="register-card">
         <div class="register-card__header">
           <p>创建账号</p>
@@ -116,23 +116,23 @@
           </el-form-item>
 
           <div class="register-card__footer">
-            <el-link type="primary" @click="router.push('/login')"
-              >已有账号？去登录</el-link
-            >
-            <el-button type="primary" :loading="loading" @click="handleRegister"
-              >提交注册</el-button
-            >
+            <el-link type="primary" @click="router.push('/login')">
+              已有账号？去登录
+            </el-link>
+            <el-button type="primary" :loading="loading" @click="handleRegister">
+              提交注册
+            </el-button>
           </div>
         </el-form>
       </div>
     </section>
 
-    <section class="register-page__panel register-page__panel--intro">
+    <section class="register-page__intro">
       <p class="register-page__eyebrow">用户中心</p>
-      <h1>完整的注册信息结构，直接对接后端接口</h1>
+      <h1>完整用户资料，直接对接后端注册接口</h1>
       <p class="register-page__copy">
-        注册页包含用户名、密码、手机号、邮箱、头像、昵称、出生日期、身份证号、性别等字段，提交后对接
-        /user/register 接口。
+        表单字段覆盖用户名、密码、手机号、邮箱、头像、昵称、出生日期、身份证号和性别，提交后调用
+        /user/register。
       </p>
     </section>
   </div>
@@ -233,93 +233,89 @@ const rules: FormRules<RegisterForm> = {
 };
 
 async function handleRegister() {
-  await formRef.value?.validate(async (valid) => {
-    if (!valid) {
-      return;
-    }
+  const valid = await formRef.value?.validate();
 
-    loading.value = true;
+  if (!valid) {
+    return;
+  }
 
-    try {
-      await userStore.register(form);
-      ElMessage.success("注册成功，请使用新账号登录");
-      router.push({ path: "/login", query: { account: form.username } });
-    } finally {
-      loading.value = false;
-    }
-  });
+  loading.value = true;
+
+  try {
+    await userStore.register(form);
+    ElMessage.success("注册成功，请使用新账号登录");
+    router.push({ path: "/login", query: { account: form.username } });
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
 <style scoped lang="scss">
 .register-page {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) 460px;
   min-height: 100vh;
-  background: radial-gradient(
-      circle at top right,
-      rgba(250, 204, 21, 0.18),
-      transparent 24%
-    ),
-    radial-gradient(
-      circle at bottom left,
-      rgba(56, 189, 248, 0.2),
-      transparent 28%
-    ),
-    linear-gradient(135deg, #0f172a 0%, #111827 46%, #0f172a 100%);
-}
+  background: #f4f7fb;
 
-.register-page__panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(28px, 5vw, 64px);
-}
+  &__form-wrap,
+  &__intro {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(24px, 5vw, 56px);
+  }
 
-.register-page__eyebrow {
-  margin: 0 0 16px;
-  color: #fde68a;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
+  &__intro {
+    color: #ffffff;
+    background:
+      linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(37, 99, 235, 0.78)),
+      url("https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1400&q=80")
+        center / cover;
+  }
 
-.register-page h1 {
-  margin: 0;
-  max-width: 14ch;
-  color: #fff;
-  font-size: clamp(34px, 4.5vw, 56px);
-  line-height: 1.08;
-}
+  &__eyebrow {
+    margin: 0 0 16px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    font-weight: 700;
+  }
 
-.register-page__copy {
-  max-width: 48ch;
-  margin: 20px 0 0;
-  color: rgba(226, 232, 240, 0.86);
-  line-height: 1.8;
+  h1 {
+    max-width: 12ch;
+    margin: 0;
+    font-size: clamp(32px, 4vw, 52px);
+    line-height: 1.1;
+  }
+
+  &__copy {
+    max-width: 44ch;
+    margin: 20px 0 0;
+    color: rgba(255, 255, 255, 0.86);
+    line-height: 1.8;
+  }
 }
 
 .register-card {
-  width: min(720px, 100%);
-  padding: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(24px);
-  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 28px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 
   &__header {
-    margin-bottom: 24px;
+    margin-bottom: 22px;
 
     p {
       margin: 0 0 8px;
-      color: #94a3b8;
+      color: #64748b;
     }
 
     h2 {
       margin: 0;
-      color: #fff;
+      color: #111827;
       font-size: 28px;
     }
   }
@@ -333,22 +329,25 @@ async function handleRegister() {
   }
 }
 
-:deep(.el-form-item__label) {
-  color: rgba(226, 232, 240, 0.9);
-}
-
-@media (max-width: 960px) {
+@media (max-width: 1080px) {
   .register-page {
     grid-template-columns: 1fr;
 
-    &__panel--intro {
-      padding-top: 0;
+    &__intro {
+      min-height: 320px;
+      order: -1;
     }
   }
+}
 
-  .register-card__footer {
-    flex-direction: column;
-    align-items: stretch;
+@media (max-width: 520px) {
+  .register-card {
+    padding: 20px;
+
+    &__footer {
+      align-items: stretch;
+      flex-direction: column;
+    }
   }
 }
 </style>

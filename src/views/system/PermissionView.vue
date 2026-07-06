@@ -1,6 +1,6 @@
 <template>
   <div class="permission-page">
-    <el-row :gutter="20">
+    <el-row v-loading="permissionStore.loading" :gutter="16">
       <el-col :xs="24" :lg="8">
         <el-card class="permission-page__panel" shadow="never">
           <template #header>
@@ -10,12 +10,17 @@
             </div>
           </template>
 
-          <div class="permission-page__role-list">
+          <el-empty
+            v-if="!permissionStore.roles.length"
+            description="暂无角色数据"
+          />
+          <div v-else class="permission-page__role-list">
             <button
               v-for="role in permissionStore.roles"
               :key="role.id"
               class="permission-page__role-card"
               :class="{ 'is-active': role.id === permissionStore.activeRoleId }"
+              type="button"
               @click="permissionStore.selectRole(role.id)"
             >
               <div>
@@ -37,8 +42,12 @@
             <div class="permission-page__panel-header">
               <span>权限树</span>
               <div class="permission-page__actions">
-                <el-tag type="success">{{ activeRole?.name || '未选择角色' }}</el-tag>
-                <el-button type="primary" :loading="saving" @click="handleSave">保存权限</el-button>
+                <el-tag type="success">
+                  {{ activeRole?.name || "未选择角色" }}
+                </el-tag>
+                <el-button type="primary" :loading="saving" @click="handleSave">
+                  保存权限
+                </el-button>
               </div>
             </div>
           </template>
@@ -66,67 +75,68 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { usePermissionStore } from '@/stores/permission'
+import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { usePermissionStore } from "@/stores/permission";
 
 type TreeRef = {
-  getCheckedKeys: (leafOnly?: boolean) => Array<string | number>
-  setCheckedKeys: (keys: Array<string | number>) => void
-}
+  getCheckedKeys: (leafOnly?: boolean) => Array<string | number>;
+  setCheckedKeys: (keys: Array<string | number>) => void;
+};
 
-const permissionStore = usePermissionStore()
-const treeRef = ref<TreeRef | null>(null)
-const checkedKeys = ref<string[]>([])
-const saving = ref(false)
+const permissionStore = usePermissionStore();
+const treeRef = ref<TreeRef | null>(null);
+const checkedKeys = ref<string[]>([]);
+const saving = ref(false);
 
 const treeProps = {
-  label: 'label',
-  children: 'children',
-}
+  label: "label",
+  children: "children",
+};
 
-const activeRole = computed(() => permissionStore.activeRole)
-const topLevelCount = computed(() => permissionStore.permissionTree.length)
+const activeRole = computed(() => permissionStore.activeRole);
+const topLevelCount = computed(() => permissionStore.permissionTree.length);
 
 function syncCheckedKeys() {
-  const nextKeys = activeRole.value?.permissionIds ?? []
-  checkedKeys.value = [...nextKeys]
+  const nextKeys = activeRole.value?.permissionIds ?? [];
+  checkedKeys.value = [...nextKeys];
+
   nextTick(() => {
-    treeRef.value?.setCheckedKeys(nextKeys)
-  })
+    treeRef.value?.setCheckedKeys(nextKeys);
+  });
 }
 
 onMounted(async () => {
-  await permissionStore.loadCatalog()
-  syncCheckedKeys()
-})
+  await permissionStore.loadCatalog();
+  syncCheckedKeys();
+});
 
 watch(
   () => permissionStore.activeRoleId,
   () => {
-    syncCheckedKeys()
+    syncCheckedKeys();
   },
-)
+);
 
 function handleCheck() {
-  checkedKeys.value = treeRef.value?.getCheckedKeys(false).map((key) => String(key)) ?? []
+  checkedKeys.value =
+    treeRef.value?.getCheckedKeys(false).map((key) => String(key)) ?? [];
 }
 
 async function handleSave() {
   if (!activeRole.value) {
-    ElMessage.warning('请先选择一个角色')
-    return
+    ElMessage.warning("请先选择一个角色");
+    return;
   }
 
-  saving.value = true
+  saving.value = true;
+
   try {
-    await permissionStore.savePermissions(checkedKeys.value)
-    await permissionStore.loadCatalog()
-    permissionStore.selectRole(activeRole.value.id)
-    syncCheckedKeys()
-    ElMessage.success('权限保存成功')
+    await permissionStore.savePermissions(checkedKeys.value);
+    syncCheckedKeys();
+    ElMessage.success("权限保存成功");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 </script>
@@ -134,10 +144,9 @@ async function handleSave() {
 <style scoped lang="scss">
 .permission-page {
   &__panel {
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 24px;
-    background: rgba(15, 23, 42, 0.82);
-    color: #e2e8f0;
+    min-height: 100%;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
   }
 
   &__panel-header {
@@ -145,104 +154,103 @@ async function handleSave() {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    color: #fff;
+    color: #111827;
     font-weight: 700;
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
   }
 
   &__summary {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-bottom: 18px;
   }
 
   &__role-list {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
   }
 
   &__role-card {
-    width: 100%;
     display: flex;
+    width: 100%;
     justify-content: space-between;
-    gap: 16px;
-    padding: 18px;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 18px;
-    background: rgba(30, 41, 59, 0.76);
+    gap: 14px;
+    padding: 16px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #ffffff;
     color: inherit;
     text-align: left;
     cursor: pointer;
     transition:
-      transform 0.2s ease,
       border-color 0.2s ease,
-      background 0.2s ease;
+      background 0.2s ease,
+      box-shadow 0.2s ease;
 
     &:hover,
     &.is-active {
-      transform: translateY(-1px);
-      border-color: rgba(103, 232, 249, 0.5);
-      background: rgba(15, 118, 110, 0.2);
+      border-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 8px 22px rgba(37, 99, 235, 0.12);
     }
 
     h3 {
       margin: 0 0 8px;
-      color: #fff;
+      color: #111827;
       font-size: 16px;
     }
 
     p {
       margin: 0;
-      color: #cbd5e1;
+      color: #64748b;
       line-height: 1.7;
     }
   }
 
   &__role-meta {
     display: flex;
+    min-width: 118px;
     flex-direction: column;
     align-items: flex-end;
     justify-content: space-between;
     gap: 8px;
-    min-width: 120px;
 
     span {
-      color: #67e8f9;
+      color: #2563eb;
       font-weight: 700;
+      white-space: nowrap;
     }
 
     small {
-      color: #94a3b8;
+      color: #64748b;
       text-align: right;
     }
   }
 }
 
-:deep(.el-tree) {
-  color: #e2e8f0;
-  background: transparent;
-}
-
-:deep(.el-tree-node__content:hover),
-:deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background: rgba(103, 232, 249, 0.12);
-}
-
-:deep(.el-statistic__head),
-:deep(.el-statistic__content) {
-  color: #fff;
-}
-
 @media (max-width: 960px) {
-  .permission-page__summary {
-    grid-template-columns: 1fr;
+  .permission-page {
+    &__summary {
+      grid-template-columns: 1fr;
+    }
+
+    &__panel-header,
+    &__actions,
+    &__role-card {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    &__role-meta {
+      align-items: flex-start;
+    }
   }
 }
 </style>

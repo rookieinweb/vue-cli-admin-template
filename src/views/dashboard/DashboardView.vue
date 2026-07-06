@@ -1,19 +1,27 @@
 <template>
   <div class="dashboard">
-    <section class="dashboard__hero">
+    <section class="dashboard__summary">
       <div>
         <p class="dashboard__eyebrow">Dashboard</p>
         <h1>你好，{{ userStore.displayName }}</h1>
-        <p class="dashboard__copy">
-          当前后台框架已经接通路由、状态管理、请求封装和基础权限页面，可以直接继续扩展业务模块。
+        <p>
+          当前模板已接入路由、状态管理、请求封装和权限配置，可继续扩展业务模块。
         </p>
       </div>
 
-      <el-button type="primary" plain @click="router.push('/admin/permission')">前往权限管理</el-button>
+      <el-button type="primary" @click="router.push('/admin/permission')">
+        前往权限管理
+      </el-button>
     </section>
 
-    <el-row :gutter="20" class="dashboard__cards">
-      <el-col :xs="24" :sm="12" :lg="6" v-for="item in stats" :key="item.label">
+    <el-row :gutter="16">
+      <el-col
+        v-for="item in stats"
+        :key="item.label"
+        :xs="24"
+        :sm="12"
+        :lg="6"
+      >
         <el-card class="dashboard__card" shadow="never">
           <p>{{ item.label }}</p>
           <strong>{{ item.value }}</strong>
@@ -22,7 +30,7 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="20">
+    <el-row :gutter="16">
       <el-col :xs="24" :lg="14">
         <el-card class="dashboard__panel" shadow="never">
           <template #header>
@@ -32,18 +40,16 @@
           </template>
 
           <div class="dashboard__quick-grid">
-            <div class="dashboard__quick-item">
-              <h3>登录页</h3>
-              <p>支持路由跳转和登录态管理。</p>
-            </div>
-            <div class="dashboard__quick-item">
-              <h3>注册页</h3>
-              <p>包含姓名、昵称、性别、身份证号、电话号码等字段。</p>
-            </div>
-            <div class="dashboard__quick-item">
-              <h3>权限页</h3>
-              <p>通过角色与权限树快速配置后台权限结构。</p>
-            </div>
+            <button
+              v-for="entry in quickEntries"
+              :key="entry.title"
+              class="dashboard__quick-item"
+              type="button"
+              @click="router.push(entry.path)"
+            >
+              <h3>{{ entry.title }}</h3>
+              <p>{{ entry.description }}</p>
+            </button>
           </div>
         </el-card>
       </el-col>
@@ -57,10 +63,18 @@
           </template>
 
           <el-descriptions :column="1" border>
-            <el-descriptions-item label="账号">{{ userStore.userInfo?.account }}</el-descriptions-item>
-            <el-descriptions-item label="姓名">{{ userStore.userInfo?.name }}</el-descriptions-item>
-            <el-descriptions-item label="昵称">{{ userStore.userInfo?.nickname }}</el-descriptions-item>
-            <el-descriptions-item label="角色">{{ userStore.userInfo?.role }}</el-descriptions-item>
+            <el-descriptions-item label="账号">
+              {{ userStore.userInfo?.account || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item label="姓名">
+              {{ userStore.userInfo?.name || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item label="昵称">
+              {{ userStore.userInfo?.nickname || "-" }}
+            </el-descriptions-item>
+            <el-descriptions-item label="角色">
+              {{ userStore.userInfo?.role || "-" }}
+            </el-descriptions-item>
           </el-descriptions>
         </el-card>
       </el-col>
@@ -69,151 +83,182 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { usePermissionStore } from '@/stores/permission'
+import { computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
+import { usePermissionStore } from "@/stores/permission";
 
-const router = useRouter()
-const userStore = useUserStore()
-const permissionStore = usePermissionStore()
+const router = useRouter();
+const userStore = useUserStore();
+const permissionStore = usePermissionStore();
+
+onMounted(() => {
+  if (!permissionStore.roles.length) {
+    permissionStore.loadCatalog();
+  }
+});
 
 const stats = computed(() => [
   {
-    label: '角色数量',
+    label: "角色数量",
     value: permissionStore.roles.length,
-    tip: '支持管理员、运营和审核角色',
+    tip: "管理员、运营、审核等角色",
   },
   {
-    label: '当前角色',
-    value: userStore.userInfo?.role ?? '未识别',
-    tip: '登录后自动显示用户角色',
+    label: "当前角色",
+    value: userStore.userInfo?.role ?? "未识别",
+    tip: "根据登录用户资料展示",
   },
   {
-    label: '账户状态',
-    value: userStore.isLoggedIn ? '已登录' : '未登录',
-    tip: '由 Pinia 与路由守卫控制',
+    label: "账号状态",
+    value: userStore.isLoggedIn ? "已登录" : "未登录",
+    tip: "Pinia 与路由守卫控制",
   },
   {
-    label: '请求层',
-    value: 'Axios',
-    tip: '已封装统一请求与 mock 数据',
+    label: "请求层",
+    value: "Axios",
+    tip: "统一 token、错误与响应解析",
   },
-])
+]);
+
+const quickEntries = [
+  {
+    title: "登录页",
+    description: "支持重定向和登录态管理。",
+    path: "/login",
+  },
+  {
+    title: "注册页",
+    description: "完整用户资料表单与校验。",
+    path: "/register",
+  },
+  {
+    title: "权限页",
+    description: "通过角色和权限树配置后台权限。",
+    path: "/admin/permission",
+  },
+];
 </script>
 
 <style scoped lang="scss">
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 
-  &__hero {
+  &__summary {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 20px;
-    padding: 28px;
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 28px;
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.84));
-    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.24);
+    gap: 16px;
+    padding: 24px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #ffffff;
 
     h1 {
       margin: 0;
-      color: #fff;
-      font-size: clamp(28px, 4vw, 44px);
+      color: #111827;
+      font-size: 28px;
+    }
+
+    p:last-child {
+      max-width: 58ch;
+      margin: 10px 0 0;
+      color: #64748b;
+      line-height: 1.7;
     }
   }
 
   &__eyebrow {
-    margin: 0 0 10px;
-    color: #67e8f9;
-    letter-spacing: 0.16em;
+    margin: 0 0 8px;
+    color: #2563eb;
+    font-size: 12px;
+    font-weight: 700;
     text-transform: uppercase;
-  }
-
-  &__copy {
-    max-width: 52ch;
-    margin: 14px 0 0;
-    color: #cbd5e1;
-    line-height: 1.8;
-  }
-
-  &__cards {
-    margin-top: 2px;
   }
 
   &__card,
   &__panel {
-    border: 1px solid rgba(148, 163, 184, 0.16);
-    border-radius: 24px;
-    background: rgba(15, 23, 42, 0.82);
-    color: #e2e8f0;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
   }
 
   &__card {
-    min-height: 140px;
+    min-height: 132px;
+    margin-bottom: 16px;
 
     p {
-      margin: 0 0 14px;
-      color: #94a3b8;
+      margin: 0 0 12px;
+      color: #64748b;
       font-size: 13px;
     }
 
     strong {
       display: block;
-      font-size: 28px;
-      color: #fff;
       margin-bottom: 8px;
+      color: #111827;
+      font-size: 26px;
     }
 
     span {
-      color: #94a3b8;
+      color: #64748b;
+      font-size: 13px;
     }
   }
 
   &__panel-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #fff;
+    color: #111827;
     font-weight: 700;
   }
 
   &__quick-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    gap: 12px;
   }
 
   &__quick-item {
-    padding: 18px;
-    border-radius: 18px;
-    background: rgba(30, 41, 59, 0.8);
+    min-height: 118px;
+    padding: 16px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #f8fafc;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+
+    &:hover {
+      border-color: #2563eb;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+    }
 
     h3 {
       margin: 0 0 10px;
-      color: #fff;
+      color: #111827;
       font-size: 16px;
     }
 
     p {
       margin: 0;
-      color: #cbd5e1;
+      color: #64748b;
       line-height: 1.7;
     }
   }
 }
 
 @media (max-width: 960px) {
-  .dashboard__hero {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+  .dashboard {
+    &__summary {
+      align-items: flex-start;
+      flex-direction: column;
+    }
 
-  .dashboard__quick-grid {
-    grid-template-columns: 1fr;
+    &__quick-grid {
+      grid-template-columns: 1fr;
+    }
   }
 }
 </style>

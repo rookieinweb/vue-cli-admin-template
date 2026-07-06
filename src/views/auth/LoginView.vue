@@ -1,22 +1,21 @@
 <template>
   <div class="auth-page">
-    <section class="auth-page__panel auth-page__panel--intro">
+    <section class="auth-page__intro">
       <p class="auth-page__eyebrow">Admin Pro</p>
-      <h1>用一套清晰的管理框架承载你的后台业务</h1>
+      <h1>清晰、稳定的后台管理起点</h1>
       <p class="auth-page__copy">
-        这是一个基于 Vue3、Pinia、Router、Axios 和 Element Plus
-        的后台管理项目脚手架，已经内置登录、注册和权限管理页面。
+        内置登录、注册、权限管理、路由守卫和统一请求封装，适合继续扩展业务模块。
       </p>
 
       <ul class="auth-page__points">
-        <li>路由守卫 + 登录态控制</li>
-        <li>Pinia 用户状态管理</li>
+        <li>路由守卫与登录态管理</li>
+        <li>Pinia 用户状态持久化</li>
         <li>Axios 统一请求封装</li>
-        <li>Element Plus 业务表单</li>
+        <li>Element Plus 表单体验</li>
       </ul>
     </section>
 
-    <section class="auth-page__panel auth-page__panel--form">
+    <section class="auth-page__form-wrap">
       <div class="auth-card">
         <div class="auth-card__header">
           <p>欢迎回来</p>
@@ -49,9 +48,9 @@
 
           <div class="auth-card__footer">
             <el-checkbox v-model="remember">记住登录状态</el-checkbox>
-            <el-link type="primary" @click="router.push('/register')"
-              >没有账号？去注册</el-link
-            >
+            <el-link type="primary" @click="router.push('/register')">
+              没有账号？去注册
+            </el-link>
           </div>
 
           <el-button
@@ -69,12 +68,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from "vue";
+import { reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { FormInstance, FormRules } from "element-plus";
 import { useUserStore } from "@/stores/user";
 import type { LoginForm } from "@/types/auth";
-import { getUsersApi } from "@/api/auth";
 
 const router = useRouter();
 const route = useRoute();
@@ -93,126 +91,110 @@ const rules: FormRules<LoginForm> = {
   account: [{ required: true, message: "请输入账号", trigger: "blur" }],
   password: [{ required: true, message: "请输入密码", trigger: "blur" }],
 };
-onMounted(async () => {
-  console.log(111111111111111111, 222222222);
-  const users = await getUsersApi({ id: 1 });
-  console.log("22222222222222333333333333", users);
-});
+
 async function handleLogin() {
-  await formRef.value?.validate(async (valid) => {
-    if (!valid) {
-      return;
-    }
+  const valid = await formRef.value?.validate();
 
-    loading.value = true;
+  if (!valid) {
+    return;
+  }
 
-    try {
-      await userStore.login(form);
-      const redirect =
-        typeof route.query.redirect === "string"
-          ? route.query.redirect
-          : "/admin/dashboard";
-      router.replace(redirect);
-    } finally {
-      loading.value = false;
-    }
-  });
+  loading.value = true;
+
+  try {
+    await userStore.login(form);
+    const redirect =
+      typeof route.query.redirect === "string"
+        ? route.query.redirect
+        : "/admin/dashboard";
+    router.replace(redirect);
+  } finally {
+    loading.value = false;
+  }
 }
 </script>
 
 <style scoped lang="scss">
 .auth-page {
   display: grid;
-  grid-template-columns: 1.1fr 0.9fr;
+  grid-template-columns: minmax(0, 1fr) 520px;
   min-height: 100vh;
-  color: #fff;
-  background: radial-gradient(
-      circle at top left,
-      rgba(45, 212, 191, 0.3),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at bottom right,
-      rgba(59, 130, 246, 0.28),
-      transparent 24%
-    ),
-    linear-gradient(135deg, #0f172a 0%, #111827 42%, #0f172a 100%);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, 0.92), rgba(20, 184, 166, 0.78)),
+    url("https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1600&q=80")
+      center / cover;
+  color: #ffffff;
 
-  &__panel {
+  &__intro,
+  &__form-wrap {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(32px, 6vw, 72px);
+    padding: clamp(28px, 6vw, 72px);
   }
 
   &__eyebrow {
     margin: 0 0 16px;
-    color: #67e8f9;
+    color: rgba(255, 255, 255, 0.82);
     font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.2em;
     text-transform: uppercase;
   }
 
   h1 {
+    max-width: 12ch;
     margin: 0;
     font-size: clamp(34px, 5vw, 58px);
     line-height: 1.08;
-    max-width: 14ch;
   }
 
   &__copy {
+    max-width: 46ch;
     margin: 20px 0 0;
-    max-width: 52ch;
-    color: rgba(226, 232, 240, 0.86);
+    color: rgba(255, 255, 255, 0.86);
     line-height: 1.8;
-    font-size: 15px;
   }
 
   &__points {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
+    gap: 12px;
+    max-width: 620px;
     margin: 32px 0 0;
     padding: 0;
     list-style: none;
 
     li {
-      padding: 16px 18px;
-      border: 1px solid rgba(148, 163, 184, 0.18);
-      border-radius: 18px;
-      background: rgba(15, 23, 42, 0.42);
-      backdrop-filter: blur(18px);
-      color: #e2e8f0;
+      padding: 14px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.24);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.2);
+      backdrop-filter: blur(14px);
     }
   }
 
-  &__panel--form {
-    align-items: center;
+  &__form-wrap {
+    background: rgba(255, 255, 255, 0.94);
+    color: #1f2937;
   }
 }
 
 .auth-card {
-  width: min(480px, 100%);
-  padding: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(24px);
-  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+  width: min(420px, 100%);
+  margin: 0 auto;
 
   &__header {
     margin-bottom: 24px;
 
     p {
       margin: 0 0 8px;
-      color: #94a3b8;
+      color: #64748b;
     }
 
     h2 {
       margin: 0;
+      color: #111827;
       font-size: 28px;
-      color: #fff;
     }
   }
 
@@ -229,22 +211,24 @@ async function handleLogin() {
   }
 }
 
-:deep(.el-form-item__label) {
-  color: rgba(226, 232, 240, 0.9);
-}
-
 @media (max-width: 960px) {
   .auth-page {
     grid-template-columns: 1fr;
 
-    &__panel--intro {
-      min-height: auto;
-      padding-bottom: 0;
-    }
-
     &__points {
       grid-template-columns: 1fr;
     }
+
+    &__form-wrap {
+      justify-content: flex-start;
+    }
+  }
+}
+
+@media (max-width: 520px) {
+  .auth-card__footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 </style>

@@ -26,9 +26,3 @@ export interface UserProfile {
   phone: string;
   role: string;
 }
-
-export interface AuthUserRecord {
-  account: string;
-  password: string;
-  profile: UserProfile;
-}

@@ -2,8 +2,16 @@ import { createApp } from "vue";
 import App from "./App.vue";
 import router from "./router";
 import { pinia } from "./stores";
-import ElementPlus from "element-plus";
+import ElementPlus, { ElMessage } from "element-plus";
 import "element-plus/dist/index.css";
 import "./styles/global.scss";
 
-createApp(App).use(pinia).use(router).use(ElementPlus).mount("#app");
+const app = createApp(App);
+
+app.config.errorHandler = (err, _instance, info) => {
+  console.error(err);
+  console.error(info);
+  ElMessage.error((err as Error).message || "页面运行出错");
+};
+
+app.use(pinia).use(router).use(ElementPlus).mount("#app");

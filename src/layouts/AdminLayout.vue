@@ -1,11 +1,11 @@
 <template>
   <el-container class="admin-layout">
-    <el-aside class="admin-layout__aside" width="260px">
+    <el-aside class="admin-layout__aside" width="248px">
       <div class="admin-layout__brand">
         <div class="admin-layout__logo">A</div>
         <div>
           <h1>Admin Pro</h1>
-          <p>Vue3 后台管理框架</p>
+          <p>Vue3 后台管理模板</p>
         </div>
       </div>
 
@@ -13,9 +13,6 @@
         class="admin-layout__menu"
         :default-active="route.path"
         router
-        background-color="transparent"
-        text-color="#cbd5e1"
-        active-text-color="#ffffff"
       >
         <el-menu-item index="/admin/dashboard">
           <el-icon><HomeFilled /></el-icon>
@@ -36,15 +33,15 @@
         </div>
 
         <div class="admin-layout__actions">
-          <el-tag effect="dark" type="success">在线</el-tag>
+          <el-tag type="success" effect="light">在线</el-tag>
           <el-dropdown trigger="click" @command="handleCommand">
-            <div class="admin-layout__user">
-              <el-avatar size="small">{{ avatarText }}</el-avatar>
-              <div>
+            <button class="admin-layout__user" type="button">
+              <el-avatar :size="32">{{ avatarText }}</el-avatar>
+              <span>
                 <strong>{{ userStore.displayName }}</strong>
-                <p>{{ userStore.userInfo?.account || 'guest' }}</p>
-              </div>
-            </div>
+                <small>{{ userStore.userInfo?.account || "guest" }}</small>
+              </span>
+            </button>
 
             <template #dropdown>
               <el-dropdown-menu>
@@ -64,27 +61,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { HomeFilled, Lock } from '@element-plus/icons-vue'
-import { useUserStore } from '@/stores/user'
+import { computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { HomeFilled, Lock } from "@element-plus/icons-vue";
+import { useUserStore } from "@/stores/user";
 
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
 
 const titleMap: Record<string, string> = {
-  '/admin/dashboard': '控制台',
-  '/admin/permission': '权限管理',
-}
+  "/admin/dashboard": "控制台",
+  "/admin/permission": "权限管理",
+};
 
-const currentTitle = computed(() => titleMap[route.path] ?? '后台管理')
-const avatarText = computed(() => (userStore.displayName || 'A').slice(0, 1).toUpperCase())
+const currentTitle = computed(() => titleMap[route.path] ?? "后台管理");
+const avatarText = computed(() =>
+  (userStore.displayName || "A").slice(0, 1).toUpperCase(),
+);
 
 function handleCommand(command: string) {
-  if (command === 'logout') {
-    userStore.logout()
-    router.push('/login')
+  if (command === "logout") {
+    userStore.logout();
+    router.push("/login");
   }
 }
 </script>
@@ -92,34 +91,33 @@ function handleCommand(command: string) {
 <style scoped lang="scss">
 .admin-layout {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(45, 212, 191, 0.18), transparent 28%),
-    radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.14), transparent 24%),
-    #0f172a;
+  background: #f4f7fb;
 
   &__aside {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 24px 18px;
-    border-right: 1px solid rgba(148, 163, 184, 0.16);
-    backdrop-filter: blur(18px);
+    padding: 20px 16px;
+    border-right: 1px solid #dbe3ef;
+    background: #ffffff;
   }
 
   &__brand {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
+    min-height: 56px;
+    padding: 0 8px;
 
     h1 {
       margin: 0;
-      font-size: 20px;
-      color: #fff;
+      color: #111827;
+      font-size: 18px;
     }
 
     p {
       margin: 4px 0 0;
-      color: #94a3b8;
+      color: #64748b;
       font-size: 12px;
     }
   }
@@ -127,98 +125,120 @@ function handleCommand(command: string) {
   &__logo {
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
-    border-radius: 16px;
-    color: #0f172a;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    color: #ffffff;
     font-weight: 800;
-    background: linear-gradient(135deg, #5eead4, #93c5fd);
-    box-shadow: 0 12px 30px rgba(56, 189, 248, 0.3);
+    background: #2563eb;
   }
 
   &__menu {
     border-right: 0;
+
+    :deep(.el-menu-item) {
+      height: 44px;
+      border-radius: 8px;
+      color: #475569;
+    }
+
+    :deep(.el-menu-item.is-active) {
+      color: #2563eb;
+      background: #eff6ff;
+      font-weight: 700;
+    }
   }
 
   &__main {
-    background: transparent;
+    min-width: 0;
   }
 
   &__header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 84px;
+    height: 72px;
     padding: 0 28px;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-    background: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(18px);
+    border-bottom: 1px solid #dbe3ef;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
 
     h2 {
       margin: 4px 0 0;
-      color: #fff;
+      color: #111827;
       font-size: 22px;
     }
   }
 
   &__subtitle {
     margin: 0;
-    color: #94a3b8;
+    color: #64748b;
     font-size: 12px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
 
   &__user {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-width: 148px;
+    padding: 6px 8px;
+    border: 1px solid #dbe3ef;
+    border-radius: 8px;
+    background: #ffffff;
+    color: inherit;
+    text-align: left;
     cursor: pointer;
 
-    strong,
-    p {
-      display: block;
-      margin: 0;
+    span {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
     }
 
     strong {
-      color: #fff;
+      color: #111827;
       font-size: 14px;
+      line-height: 1.2;
     }
 
-    p {
-      color: #94a3b8;
+    small {
+      margin-top: 2px;
+      color: #64748b;
       font-size: 12px;
     }
   }
 
   &__content {
-    padding: 28px;
+    padding: 24px;
   }
 }
 
 @media (max-width: 960px) {
   .admin-layout {
+    display: block;
+
     &__aside {
       width: 100% !important;
+      border-right: 0;
+      border-bottom: 1px solid #dbe3ef;
     }
 
     &__header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 16px;
       height: auto;
-      padding: 20px 18px;
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 14px;
+      padding: 18px;
     }
 
     &__content {
-      padding: 18px;
+      padding: 16px;
     }
   }
 }

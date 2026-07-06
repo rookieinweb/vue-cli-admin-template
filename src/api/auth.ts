@@ -1,48 +1,44 @@
 import request from "@/utils/request";
 import type { LoginForm, RegisterForm, UserProfile } from "@/types/auth";
 
-interface ApiResult<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
-
-interface LoginResponse {
+export interface LoginResponse {
   token: string;
   user: UserProfile;
 }
 
-function unwrap<T>(response: ApiResult<T>) {
-  if (!response.success) {
-    throw new Error(response.message);
-  }
-
-  return response.data;
-}
-
 export async function loginApi(form: LoginForm) {
-  const { data } = await request.post<ApiResult<LoginResponse>>(
-    "/auth/login",
-    form,
-  );
-  return unwrap(data);
+  return request.post<LoginResponse>("/auth/login", form);
 }
 
 export async function registerApi(form: RegisterForm) {
-  const { confirmPassword, ...payload } = form;
-  void confirmPassword;
+  const {
+    username,
+    password,
+    phone,
+    email,
+    avatar,
+    nickname,
+    birth_date,
+    id_card,
+    gender,
+    other,
+  } = form;
+  const payload = {
+    username,
+    password,
+    phone,
+    email,
+    avatar,
+    nickname,
+    birth_date,
+    id_card,
+    gender,
+    other,
+  };
 
-  const { data } = await request.post<ApiResult<null>>(
-    "/user/register",
-    payload,
-  );
-  return unwrap(data);
+  return request.post<null>("/user/register", payload);
 }
 
-/**
- * 获取用户列表
- */
 export async function getUsersApi(params: { id?: number }) {
-  const { data } = await request.get<unknown>("/user", { params });
-  return unwrap(data);
+  return request.get<UserProfile[]>("/user", params);
 }
