@@ -2,18 +2,14 @@
   <el-container class="admin-layout">
     <el-aside class="admin-layout__aside" width="248px">
       <div class="admin-layout__brand">
-        <div class="admin-layout__logo">A</div>
+        <div class="admin-layout__logo">S</div>
         <div>
-          <h1>Admin Pro</h1>
+          <h1>Smart CRM</h1>
           <p>Vue3 后台管理模板</p>
         </div>
       </div>
-
-      <el-menu
-        class="admin-layout__menu"
-        :default-active="route.path"
-        router
-      >
+      <Menu />
+      <!-- <el-menu class="admin-layout__menu" :default-active="route.path" router>
         <el-menu-item index="/admin/dashboard">
           <el-icon><HomeFilled /></el-icon>
           <span>控制台</span>
@@ -22,7 +18,7 @@
           <el-icon><Lock /></el-icon>
           <span>权限管理</span>
         </el-menu-item>
-      </el-menu>
+      </el-menu> -->
     </el-aside>
 
     <el-container class="admin-layout__main">
@@ -46,7 +42,9 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">个人信息</el-dropdown-item>
-                <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
+                <el-dropdown-item command="logout" divided
+                  >退出登录</el-dropdown-item
+                >
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -63,19 +61,21 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { HomeFilled, Lock } from "@element-plus/icons-vue";
 import { useUserStore } from "@/stores/user";
+import Menu from "./components/menu.vue";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 
-const titleMap: Record<string, string> = {
-  "/admin/dashboard": "控制台",
-  "/admin/permission": "权限管理",
-};
+const currentTitle = computed(() => {
+  const matchedRoute = [...route.matched].reverse().find((record) => {
+    const title = record.meta?.title;
+    return typeof title === "string" && title.trim();
+  });
 
-const currentTitle = computed(() => titleMap[route.path] ?? "后台管理");
+  return matchedRoute?.meta?.title ?? "后台管理";
+});
 const avatarText = computed(() =>
   (userStore.displayName || "A").slice(0, 1).toUpperCase(),
 );
@@ -131,22 +131,6 @@ function handleCommand(command: string) {
     color: #ffffff;
     font-weight: 800;
     background: #2563eb;
-  }
-
-  &__menu {
-    border-right: 0;
-
-    :deep(.el-menu-item) {
-      height: 44px;
-      border-radius: 8px;
-      color: #475569;
-    }
-
-    :deep(.el-menu-item.is-active) {
-      color: #2563eb;
-      background: #eff6ff;
-      font-weight: 700;
-    }
   }
 
   &__main {
