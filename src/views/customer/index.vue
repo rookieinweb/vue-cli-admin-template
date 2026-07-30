@@ -10,7 +10,7 @@
         <el-form :inline="true" class="search-form">
           <el-form-item label="姓名">
             <el-input
-              v-model="searchForm.name"
+              v-model="searchForm.customer_name"
               placeholder="请输入姓名"
               clearable
             />
@@ -26,7 +26,7 @@
 
           <el-form-item label="状态">
             <el-select
-              v-model="searchForm.status"
+              v-model="searchForm.customer_status"
               placeholder="全部"
               clearable
               style="width: 120px"
@@ -46,15 +46,17 @@
         </el-form>
       </div>
 
-      <el-table :data="paginatedCustomers" border stripe size="small">
-        <el-table-column prop="name" label="客户姓名" />
+      <el-table :data="customers" border stripe size="small">
+        <el-table-column prop="customer_name" label="客户姓名" />
         <el-table-column prop="phone" label="手机号" />
-        <el-table-column prop="source" label="来源" />
-        <el-table-column prop="status" label="状态" />
-        <el-table-column prop="manager" label="负责人" />
+        <el-table-column prop="customer_source" label="来源" />
+        <el-table-column prop="customer_status" label="状态" />
+        <el-table-column prop="owner.username" label="负责人" />
+        <el-table-column prop="remark" label="备注" />
+        <el-table-column prop="create_time" label="创建时间" />
         <el-table-column label="操作" width="100">
-          <template #default>
-            <el-button type="text" size="small">查看</el-button>
+          <template #default="scope">
+            <el-button type="text" size="small" @click="goToDetail(scope.row.id)">查看</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -63,7 +65,8 @@
         <el-pagination
           v-model:current-page="pagination.currentPage"
           :page-size="pagination.pageSize"
-          :total="filteredCustomers.length"
+          :total="pagination.total"
+          @current-change="handleCurrentChange"
           layout="prev, pager, next"
           background
         />
@@ -110,7 +113,7 @@
             <el-option label="流失" value="流失" />
           </el-select>
         </el-form-item>
-
+        
         <el-form-item label="负责人" prop="manager" :rules="validate.change">
           <el-select
             v-model="customerForm.manager"
@@ -144,61 +147,68 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { reactive, ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
+import type { FormInstance } from "element-plus";
 import validate from "@/utils/validate";
 import customerApi from "@/api/customer";
 
 interface CustomerItem {
   id: number;
-  customerName: string;
-  phone: string;
-  source: string;
-  status: string;
-  manager: string;
+  customer_name?: string;
+  phone?: string;
+  customer_source?: string;
+  customer_status?: string;
+  owner?: { username?: string };
   remark?: string;
+  create_time?: string;
 }
-const rules = reactive({
-  name: [{ required: true, message: "请输入客户姓名", trigger: "blur" }],
-  phone: [{ required: true, message: "请输入手机号", trigger: "blur" }],
-  source: [{ required: true, message: "请选择客户来源", trigger: "change" }],
-  status: [{ required: true, message: "请选择客户状态", trigger: "change" }],
-  manager: [{ required: true, message: "请选择负责人", trigger: "change" }],
-  remark: [{ required: true, message: "请输入备注", trigger: "blur" }],
-});
+const router = useRouter();
+
 const searchForm = reactive({
-  name: "",
+  customer_name: "",
   phone: "",
-  status: "",
+  customer_status: "",
+
 });
-const createForm = ref<ElFormInstance>();
+const createForm = ref<FormInstance>();
 
 const dialogVisible = ref(false);
 const pagination = reactive({
+  page: 1,
+  size: 10,
   currentPage: 1,
   pageSize: 10,
+  total: 0,
 });
 
 const customers = ref<CustomerItem[]>([
   {
     id: 1,
-    name: "张三",
-    phone: "138xxx",
-    source: "微信",
-    status: "意向",
-    manager: "小王",
+    customer_name: "张三",
+    phone: "13888888888",
+    customer_source: "微信",
+    customer_status: "意向",
+    owner: { username: "小王" },
     remark: "跟进中",
+    create_time: "2026-07-21",
   },
   {
     id: 2,
-    name: "李四",
-    phone: "139xxx",
-    source: "官网",
-    status: "成交",
-    manager: "小李",
+    customer_name: "李四",
+    phone: "13988888888",
+    customer_source: "官网",
+    customer_status: "成交",
+    owner: { username: "小李" },
     remark: "已签约",
+    create_time: "2026-07-22",
   },
 ]);
+
+onMounted(async () => {
+  listCustomer()
+});
 
 const customerForm = reactive({
   customerName: "",
@@ -209,65 +219,59 @@ const customerForm = reactive({
   remark: "",
 });
 
-const filteredCustomers = computed(() => {
-  const name = searchForm.name.trim().toLowerCase();
-  const phone = searchForm.phone.trim();
-  const status = searchForm.status;
 
-  return customers.value.filter((item) => {
-    const matchName = !name || item.name.toLowerCase().includes(name);
-    const matchPhone = !phone || item.phone.includes(phone);
-    const matchStatus = !status || item.status === status;
 
-    return matchName && matchPhone && matchStatus;
+
+/**获取客户列表 */
+async function listCustomer() {
+  const res = await customerApi.getCustomers({
+    page: pagination.page,
+    size: pagination.size,
+    ...searchForm,
   });
-});
 
-const paginatedCustomers = computed(() => {
-  const start = (pagination.currentPage - 1) * pagination.pageSize;
-  return filteredCustomers.value.slice(start, start + pagination.pageSize);
-});
+  customers.value = (res as any)?.list || [];
+  pagination.total = (res as any)?.total || 0;
+}
 
 function handleSearch() {
-  pagination.currentPage = 1;
+  pagination.page = 1;
+  listCustomer();
 }
 
 function resetSearch() {
-  searchForm.name = "";
+  searchForm.customer_name = "";
   searchForm.phone = "";
-  searchForm.status = "";
+  searchForm.customer_status = "";
+  pagination.page = 1;
   pagination.currentPage = 1;
+  listCustomer();
 }
 
 function openCreateDialog() {
   dialogVisible.value = true;
 }
 
-async function handleSave() {
-  let valid = await createForm.value.validate().catch((err)=>false);
-  if (!valid) return;
-  let res = await customerApi.createCustomer(customerForm);
-  console.log('res',res);
-  ElMessage.error(res.msg || "新增客户失败");
-  //   customers.value.unshift({
-  //     id: Date.now(),
-  //     name: customerForm.name,
-  //     phone: customerForm.phone,
-  //     source: customerForm.source,
-  //     status: customerForm.status,
-  //     manager: customerForm.manager,
-  //     remark: customerForm.remark,
-  //   });
+function goToDetail(id: number) {
+  router.push({ name: "customer-detail", params: { id } });
+}
 
-  //   ElMessage.success("新增客户成功");
-  //   dialogVisible.value = false;
-  //   customerForm.name = "";
-  //   customerForm.phone = "";
-  //   customerForm.source = "微信";
-  //   customerForm.status = "潜在客户";
-  //   customerForm.manager = "销售A";
-  //   customerForm.remark = "";
-  //   pagination.currentPage = 1;
+function handleCurrentChange(val: number) {
+  pagination.page = val;
+  pagination.currentPage = val;
+  listCustomer();
+}
+const closeCreateDialog = () => {
+  dialogVisible.value = false;
+  createForm.value?.resetFields();
+}
+async function handleSave() {
+  const valid = await createForm.value?.validate().catch(() => false);
+  if (!valid) return;
+  await customerApi.createCustomer(customerForm);
+  ElMessage.success("新增成功！");
+  closeCreateDialog();
+  listCustomer();
 }
 </script>
 
