@@ -18,7 +18,7 @@
         <div class="info-grid">
           <div class="info-item">
             <span class="label">姓名</span>
-            <span class="value">{{ customerDetail.name }}</span>
+            <span class="value">{{ customerDetail.customer_name }}</span>
           </div>
           <div class="info-item">
             <span class="label">手机号</span>
@@ -26,11 +26,11 @@
           </div>
           <div class="info-item">
             <span class="label">来源</span>
-            <span class="value">{{ customerDetail.source }}</span>
+            <span class="value">{{ customerDetail.customer_source }}</span>
           </div>
           <div class="info-item">
             <span class="label">状态</span>
-            <span class="value">{{ customerDetail.status }}</span>
+            <span class="value">{{ customerDetail.customer_status }}</span>
           </div>
         </div>
       </div>
@@ -47,10 +47,10 @@
       <div class="section-block">
         <h3 class="section-title">跟进记录</h3>
         <div class="timeline-list">
-          <div v-for="item in customerDetail.followUps" :key="item.date + item.content" class="timeline-item">
-            <div class="timeline-date">{{ item.date }}</div>
+          <div v-for="item in customerDetail.follows" :key="item.created_at + item.content" class="timeline-item">
+            <div class="timeline-date">{{ item.created_at }}</div>
             <div class="timeline-content">
-              <div class="timeline-method">{{ item.method }}</div>
+              <div class="timeline-method">{{ item.follow_type }}</div>
               <div class="timeline-text">{{ item.content }}</div>
             </div>
           </div>
@@ -62,7 +62,7 @@
       <div class="drawer-form">
         <div class="form-item">
           <div class="form-label">跟进方式</div>
-          <el-radio-group v-model="followForm.method">
+          <el-radio-group v-model="followForm.follow_type">
             <el-radio label="电话">电话</el-radio>
             <el-radio label="微信">微信</el-radio>
             <el-radio label="拜访">拜访</el-radio>
@@ -72,7 +72,7 @@
         <div class="form-item">
           <div class="form-label">跟进时间</div>
           <el-date-picker
-            v-model="followForm.followTime"
+            v-model="followForm.follow_time"
             type="datetime"
             placeholder="请选择时间"
             style="width: 100%"
@@ -97,7 +97,7 @@
         <div class="form-item">
           <div class="form-label">下次跟进时间</div>
           <el-date-picker
-            v-model="followForm.nextFollowTime"
+            v-model="followForm.next_follow_time"
             type="datetime"
             placeholder="请选择时间"
             style="width: 100%"
@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted } from "vue";
+import { computed, reactive, ref, onMounted,toRaw } from "vue";
 import { ElMessage } from "element-plus";
 import { useRoute } from "vue-router";
 import customerApi from "@/api/customer";
@@ -123,61 +123,67 @@ const route = useRoute();
 const drawerVisible = ref(false);
 
 const followForm = reactive({
-  method: "电话",
-  followTime: new Date(),
+  customer_id:'',
+  follow_type: "电话",
+  follow_time: new Date(),
   title: "",
   content: "",
   result: "",
-  nextFollowTime: "",
+  next_follow_time: "",
 });
-
+const customerDetail = ref({})
 onMounted(async () => {
+  followForm.customer_id = route?.params?.id as string;
+  console.log('route', followForm);
   getCustomerDetail()
 });
 
 async function getCustomerDetail() {
   const id = Number(route.params.id);
   const res = await customerApi.getCustomerDetail(id);
-  if (res.code === 200) {
-    customerDetail.value = res.data;
-  }
+  customerDetail.value = res;
+  console.log('toRawtoRawtoRawtoRawtoRawtoRaw',toRaw(customerDetail))
 }
 
 async function handleSaveFollow() {
+  let res = await customerApi.createFollow({
+    ...followForm,
+
+  })
   ElMessage.success("跟进记录已保存");
   drawerVisible.value = false;
   
 }
 
-const customerDetail = computed(() => {
-  const id = Number(route.params.id);
+// const customerDetail = computed(() => {
+//   const id = Number(route.params.id);
 
-  if (id === 2) {
-    return {
-      name: "李四",
-      phone: "13988888888",
-      source: "官网",
-      status: "成交",
-      tags: ["高价值", "教育行业"],
-      followUps: [
-        { date: "2026-07-25", method: "电话沟通", content: "客户已确认签约" },
-        { date: "2026-07-26", method: "微信沟通", content: "发送合同" },
-      ],
-    };
-  }
+//   if (id === 2) {
+//     return {
+//       name: "李四",
+//       phone: "13988888888",
+//       source: "官网",
+//       status: "成交",
+//       tags: ["高价值", "教育行业"],
+//       followUps: [
+//         { date: "2026-07-25", method: "电话沟通", content: "客户已确认签约" },
+//         { date: "2026-07-26", method: "微信沟通", content: "发送合同" },
+//       ],
+//     };
+//   }
 
-  return {
-    name: "张三",
-    phone: "13888888888",
-    source: "微信",
-    status: "意向客户",
-    tags: ["高价值", "教育行业"],
-    followUps: [
-      { date: "2026-07-28", method: "电话沟通", content: "客户考虑报名" },
-      { date: "2026-07-30", method: "微信沟通", content: "发送方案" },
-    ],
-  };
-});
+//   return {
+//     name: "张三",
+//     phone: "13888888888",
+//     source: "微信",
+//     status: "意向客户",
+//     tags: ["高价值", "教育行业"],
+//     followUps: [
+//       { date: "2026-07-28", method: "电话沟通", content: "客户考虑报名" },
+//       { date: "2026-07-30", method: "微信沟通", content: "发送方案" },
+//     ],
+//   };
+// });
 </script>
 
 <style scoped>

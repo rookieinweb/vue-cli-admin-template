@@ -65,7 +65,7 @@ const routes: Array<RouteRecordRaw> = [
         path: "detail/:id",
         name: "customer-detail",
         component: () => import("@/views/customer/detail.vue"),
-        meta: { title: "客户详情", icon: "Document" },
+        meta: { title: "客户详情", icon: "Document",hide:true },
       },
     ],
   },
