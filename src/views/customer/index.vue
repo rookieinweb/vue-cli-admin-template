@@ -1,6 +1,6 @@
 <template>
   <div class="customer-page">
-    <el-card shadow="never">
+    <el-card class="customer-card" shadow="never" v-loading="loading">
       <div class="page-header">
         <h2 class="page-title">客户管理</h2>
         <el-button type="primary" @click="openCreateDialog">新增客户</el-button>
@@ -146,6 +146,12 @@
   </div>
 </template>
 
+<script lang="ts">
+export default {
+  name: "CustomerIndex",
+};
+</script>
+
 <script setup lang="ts">
 import { reactive, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
@@ -164,6 +170,12 @@ interface CustomerItem {
   remark?: string;
   create_time?: string;
 }
+
+interface CustomerListResult {
+  list?: CustomerItem[];
+  total?: number;
+}
+
 const router = useRouter();
 
 const searchForm = reactive({
@@ -174,6 +186,7 @@ const searchForm = reactive({
 });
 const createForm = ref<FormInstance>();
 
+const loading = ref(false);
 const dialogVisible = ref(false);
 const pagination = reactive({
   page: 1,
@@ -207,7 +220,7 @@ const customers = ref<CustomerItem[]>([
 ]);
 
 onMounted(async () => {
-  listCustomer()
+  listCustomer();
 });
 
 const customerForm = reactive({
@@ -224,18 +237,25 @@ const customerForm = reactive({
 
 /**获取客户列表 */
 async function listCustomer() {
-  const res = await customerApi.getCustomers({
-    page: pagination.page,
-    size: pagination.size,
-    ...searchForm,
-  });
+  loading.value = true;
 
-  customers.value = (res as any)?.list || [];
-  pagination.total = (res as any)?.total || 0;
+  try {
+    const res = (await customerApi.getCustomers({
+      page: pagination.page,
+      size: pagination.size,
+      ...searchForm,
+    })) as CustomerListResult;
+
+    customers.value = res.list || [];
+    pagination.total = res.total || 0;
+  } finally {
+    loading.value = false;
+  }
 }
 
 function handleSearch() {
   pagination.page = 1;
+  pagination.currentPage = 1;
   listCustomer();
 }
 
@@ -264,7 +284,7 @@ function handleCurrentChange(val: number) {
 const closeCreateDialog = () => {
   dialogVisible.value = false;
   createForm.value?.resetFields();
-}
+};
 async function handleSave() {
   const valid = await createForm.value?.validate().catch(() => false);
   if (!valid) return;
@@ -275,35 +295,47 @@ async function handleSave() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .customer-page {
-  padding: 24px;
-  background: #f5f7fb;
   min-height: 100%;
+}
+
+.customer-card {
+  border: 1px solid var(--app-border);
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .page-title {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--app-heading);
 }
 
 .search-bar {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  padding: 16px 16px 4px;
+  border: 1px solid var(--app-border);
+  border-radius: 8px;
+  background: var(--app-soft-surface);
 }
 
 .search-form {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  column-gap: 12px;
+
+  :deep(.el-form-item) {
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
 }
 
 .pagination-wrap {
@@ -316,5 +348,16 @@ async function handleSave() {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+@media (max-width: 720px) {
+  .page-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .search-form {
+    display: block;
+  }
 }
 </style>

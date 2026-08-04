@@ -1,13 +1,13 @@
 <template>
   <div class="customer-detail-page">
-    <el-card shadow="never">
+    <el-card class="detail-card" shadow="never" v-loading="loading">
       <div class="page-header">
         <div>
           <h2 class="page-title">客户详情</h2>
           <div class="page-subtitle">查看客户的基础信息、标签和跟进记录</div>
         </div>
         <div class="page-actions">
-          <el-button type="primary" @click="drawerVisible = true">新增跟进</el-button>
+          <el-button type="primary" @click="openFollowDrawer">新增跟进</el-button>
           <el-button>编辑客户</el-button>
           <el-button>转移负责人</el-button>
         </div>
@@ -58,7 +58,12 @@
       </div>
     </el-card>
 
-    <el-drawer v-model="drawerVisible" title="新建跟进记录" direction="rtl" size="420px">
+    <el-drawer
+      v-model="drawerVisible"
+      title="新建跟进记录"
+      direction="rtl"
+      size="420px"
+    >
       <div class="drawer-form">
         <div class="form-item">
           <div class="form-label">跟进方式</div>
@@ -106,24 +111,49 @@
 
         <div class="drawer-actions">
           <el-button @click="drawerVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSaveFollow">保存</el-button>
+          <el-button type="primary" :loading="savingFollow" @click="handleSaveFollow">
+            保存
+          </el-button>
         </div>
       </div>
     </el-drawer>
   </div>
 </template>
 
+<script lang="ts">
+export default {
+  name: "CustomerDetail",
+};
+</script>
+
 <script setup lang="ts">
-import { computed, reactive, ref, onMounted,toRaw } from "vue";
+import { reactive, ref, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { useRoute } from "vue-router";
 import customerApi from "@/api/customer";
 
+interface FollowItem {
+  created_at: string;
+  follow_type: string;
+  content: string;
+}
+
+interface CustomerDetail {
+  customer_name: string;
+  phone: string;
+  customer_source: string;
+  customer_status: string;
+  tags: string[];
+  follows: FollowItem[];
+}
+
 const route = useRoute();
 const drawerVisible = ref(false);
+const loading = ref(false);
+const savingFollow = ref(false);
 
 const followForm = reactive({
-  customer_id:'',
+  customer_id: "",
   follow_type: "电话",
   follow_time: new Date(),
   title: "",
@@ -131,72 +161,86 @@ const followForm = reactive({
   result: "",
   next_follow_time: "",
 });
-const customerDetail = ref({})
+
+const customerDetail = ref<CustomerDetail>({
+  customer_name: "-",
+  phone: "-",
+  customer_source: "-",
+  customer_status: "-",
+  tags: [],
+  follows: [],
+});
+
 onMounted(async () => {
   followForm.customer_id = route?.params?.id as string;
-  console.log('route', followForm);
-  getCustomerDetail()
+  getCustomerDetail();
 });
 
 async function getCustomerDetail() {
   const id = Number(route.params.id);
-  const res = await customerApi.getCustomerDetail(id);
-  customerDetail.value = res;
-  console.log('toRawtoRawtoRawtoRawtoRawtoRaw',toRaw(customerDetail))
+  loading.value = true;
+
+  try {
+    const res = (await customerApi.getCustomerDetail(id)) as Partial<CustomerDetail>;
+
+    customerDetail.value = {
+      customer_name: res.customer_name || "-",
+      phone: res.phone || "-",
+      customer_source: res.customer_source || "-",
+      customer_status: res.customer_status || "-",
+      tags: Array.isArray(res.tags) ? res.tags : [],
+      follows: Array.isArray(res.follows) ? res.follows : [],
+    };
+  } finally {
+    loading.value = false;
+  }
+}
+
+function openFollowDrawer() {
+  followForm.customer_id = route.params.id as string;
+  drawerVisible.value = true;
+}
+
+function resetFollowForm() {
+  followForm.follow_type = "电话";
+  followForm.follow_time = new Date();
+  followForm.title = "";
+  followForm.content = "";
+  followForm.result = "";
+  followForm.next_follow_time = "";
 }
 
 async function handleSaveFollow() {
-  let res = await customerApi.createFollow({
-    ...followForm,
+  savingFollow.value = true;
 
-  })
-  ElMessage.success("跟进记录已保存");
-  drawerVisible.value = false;
-  
+  try {
+    await customerApi.createFollow({
+      ...followForm,
+    });
+    ElMessage.success("跟进记录已保存");
+    drawerVisible.value = false;
+    resetFollowForm();
+    getCustomerDetail();
+  } finally {
+    savingFollow.value = false;
+  }
 }
-
-// const customerDetail = computed(() => {
-//   const id = Number(route.params.id);
-
-//   if (id === 2) {
-//     return {
-//       name: "李四",
-//       phone: "13988888888",
-//       source: "官网",
-//       status: "成交",
-//       tags: ["高价值", "教育行业"],
-//       followUps: [
-//         { date: "2026-07-25", method: "电话沟通", content: "客户已确认签约" },
-//         { date: "2026-07-26", method: "微信沟通", content: "发送合同" },
-//       ],
-//     };
-//   }
-
-//   return {
-//     name: "张三",
-//     phone: "13888888888",
-//     source: "微信",
-//     status: "意向客户",
-//     tags: ["高价值", "教育行业"],
-//     followUps: [
-//       { date: "2026-07-28", method: "电话沟通", content: "客户考虑报名" },
-//       { date: "2026-07-30", method: "微信沟通", content: "发送方案" },
-//     ],
-//   };
-// });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .customer-detail-page {
-  padding: 24px;
-  background: #f5f7fb;
   min-height: 100%;
+}
+
+.detail-card {
+  border: 1px solid var(--app-border);
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 16px;
   margin-bottom: 20px;
 }
 
@@ -204,12 +248,12 @@ async function handleSaveFollow() {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--app-heading);
 }
 
 .page-subtitle {
   margin-top: 4px;
-  color: #6b7280;
+  color: var(--app-muted);
   font-size: 13px;
 }
 
@@ -221,14 +265,14 @@ async function handleSaveFollow() {
 
 .section-block {
   padding: 16px 0;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--app-border);
 }
 
 .section-title {
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-heading);
 }
 
 .info-grid {
@@ -245,12 +289,12 @@ async function handleSaveFollow() {
 
 .label {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--app-muted);
 }
 
 .value {
   font-size: 14px;
-  color: #111827;
+  color: var(--app-heading);
 }
 
 .tag-list {
@@ -269,20 +313,20 @@ async function handleSaveFollow() {
   display: flex;
   gap: 16px;
   padding: 12px 14px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--app-border);
   border-radius: 8px;
-  background: #fafafa;
+  background: var(--app-soft-surface);
 }
 
 .timeline-date {
   min-width: 90px;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-heading);
 }
 
 .timeline-method {
   font-weight: 600;
-  color: #2563eb;
+  color: var(--app-primary);
   margin-bottom: 4px;
 }
 
@@ -305,7 +349,7 @@ async function handleSaveFollow() {
 .form-label {
   font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  color: var(--app-heading);
 }
 
 .drawer-actions {
@@ -313,5 +357,24 @@ async function handleSaveFollow() {
   justify-content: flex-end;
   gap: 8px;
   margin-top: 8px;
+}
+
+@media (max-width: 720px) {
+  .page-header {
+    flex-direction: column;
+  }
+
+  .page-actions {
+    width: 100%;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .timeline-item {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 </style>

@@ -9,16 +9,6 @@
         </div>
       </div>
       <Menu />
-      <!-- <el-menu class="admin-layout__menu" :default-active="route.path" router>
-        <el-menu-item index="/admin/dashboard">
-          <el-icon><HomeFilled /></el-icon>
-          <span>控制台</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/permission">
-          <el-icon><Lock /></el-icon>
-          <span>权限管理</span>
-        </el-menu-item>
-      </el-menu> -->
     </el-aside>
 
     <el-container class="admin-layout__main">
@@ -91,15 +81,19 @@ function handleCommand(command: string) {
 <style scoped lang="scss">
 .admin-layout {
   min-height: 100vh;
-  background: #f4f7fb;
+  background:
+    linear-gradient(180deg, rgba(235, 244, 255, 0.72), rgba(244, 247, 251, 0) 260px),
+    var(--app-bg);
 
   &__aside {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    padding: 20px 16px;
-    border-right: 1px solid #dbe3ef;
-    background: #ffffff;
+    gap: 18px;
+    min-height: 100vh;
+    padding: 18px 14px;
+    border-right: 1px solid var(--app-border);
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 8px 0 24px rgba(15, 23, 42, 0.04);
   }
 
   &__brand {
@@ -107,17 +101,19 @@ function handleCommand(command: string) {
     align-items: center;
     gap: 12px;
     min-height: 56px;
-    padding: 0 8px;
+    padding: 0 8px 14px;
+    border-bottom: 1px solid var(--app-border);
 
     h1 {
       margin: 0;
-      color: #111827;
+      color: var(--app-heading);
       font-size: 18px;
+      line-height: 1.2;
     }
 
     p {
       margin: 4px 0 0;
-      color: #64748b;
+      color: var(--app-muted);
       font-size: 12px;
     }
   }
@@ -130,7 +126,8 @@ function handleCommand(command: string) {
     border-radius: 8px;
     color: #ffffff;
     font-weight: 800;
-    background: #2563eb;
+    background: linear-gradient(135deg, var(--app-primary), #0f766e);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22);
   }
 
   &__main {
@@ -143,20 +140,21 @@ function handleCommand(command: string) {
     justify-content: space-between;
     height: 72px;
     padding: 0 28px;
-    border-bottom: 1px solid #dbe3ef;
-    background: rgba(255, 255, 255, 0.88);
+    border-bottom: 1px solid var(--app-border);
+    background: rgba(255, 255, 255, 0.9);
     backdrop-filter: blur(16px);
 
     h2 {
       margin: 4px 0 0;
-      color: #111827;
+      color: var(--app-heading);
       font-size: 22px;
+      line-height: 1.25;
     }
   }
 
   &__subtitle {
     margin: 0;
-    color: #64748b;
+    color: var(--app-muted);
     font-size: 12px;
   }
 
@@ -172,12 +170,20 @@ function handleCommand(command: string) {
     gap: 10px;
     min-width: 148px;
     padding: 6px 8px;
-    border: 1px solid #dbe3ef;
+    border: 1px solid var(--app-border);
     border-radius: 8px;
-    background: #ffffff;
+    background: var(--app-surface);
     color: inherit;
     text-align: left;
     cursor: pointer;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+
+    &:hover {
+      border-color: #b9c7d9;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
 
     span {
       display: flex;
@@ -186,20 +192,21 @@ function handleCommand(command: string) {
     }
 
     strong {
-      color: #111827;
+      color: var(--app-heading);
       font-size: 14px;
       line-height: 1.2;
     }
 
     small {
       margin-top: 2px;
-      color: #64748b;
+      color: var(--app-muted);
       font-size: 12px;
     }
   }
 
   &__content {
     padding: 24px;
+    min-width: 0;
   }
 }
 
@@ -209,8 +216,10 @@ function handleCommand(command: string) {
 
     &__aside {
       width: 100% !important;
+      min-height: auto;
       border-right: 0;
-      border-bottom: 1px solid #dbe3ef;
+      border-bottom: 1px solid var(--app-border);
+      box-shadow: none;
     }
 
     &__header {
@@ -219,6 +228,15 @@ function handleCommand(command: string) {
       flex-direction: column;
       gap: 14px;
       padding: 18px;
+    }
+
+    &__actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    &__user {
+      min-width: 0;
     }
 
     &__content {

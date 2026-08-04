@@ -4,10 +4,10 @@
       v-if="item.children?.length"
       :index="item.path"
       class="menu-group"
-      :class="{ 'menu-group--active': activePath === item.path }"
+      :class="{ 'menu-group--active': activeGroupPath === item.path }"
     >
       <template #title>
-        <div class="menu-group__title" @click.stop="handleToggle(item.path)">
+        <div class="menu-node">
           <el-icon v-if="item.iconComponent">
             <component :is="item.iconComponent" />
           </el-icon>
@@ -15,10 +15,19 @@
         </div>
       </template>
 
-      <MenuTree :items="item.children" :active-path="activePath" @toggle-group="handleToggle" />
+      <MenuTree
+        :items="item.children"
+        :active-group-path="activeGroupPath"
+        :current-path="currentPath"
+      />
     </el-sub-menu>
 
-    <el-menu-item v-else :index="item.path" class="menu-item" :class="{ 'menu-item--active': activePath === item.path }">
+    <el-menu-item
+      v-else
+      :index="item.path"
+      class="menu-item"
+      :class="{ 'menu-item--active': currentPath === item.path }"
+    >
       <el-icon v-if="item.iconComponent">
         <component :is="item.iconComponent" />
       </el-icon>
@@ -37,57 +46,51 @@ interface MenuNode {
   children?: MenuNode[];
 }
 
-const props = withDefaults(
+withDefaults(
   defineProps<{
     items: MenuNode[];
-    activePath?: string;
+    activeGroupPath?: string;
+    currentPath?: string;
   }>(),
   {
     items: () => [],
-    activePath: "",
+    activeGroupPath: "",
+    currentPath: "",
   },
 );
-
-const emit = defineEmits<{
-  (event: "toggle-group", path: string): void;
-}>();
-
-function handleToggle(path: string) {
-  emit("toggle-group", path);
-}
 </script>
 
 <style lang="scss" scoped>
-.menu-group {
-  :deep(.el-sub-menu__title) {
-    height: 44px;
-    margin: 4px 0;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-  }
+.menu-node,
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
 
-  :deep(.el-sub-menu__title:hover) {
-    background: #f8fafc;
-    transform: translateX(2px);
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
 .menu-item {
   height: 44px;
-  margin: 4px 0;
+  margin: 3px 0;
   border-radius: 8px;
-  transition: all 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+
+  &:hover {
+    background: #f1f5f9;
+    transform: translateX(2px);
+  }
 }
 
-.menu-item:hover {
-  background: #f8fafc;
-  transform: translateX(2px);
-}
-
-.menu-group__title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
+.menu-item--active {
+  font-weight: 700;
 }
 </style>

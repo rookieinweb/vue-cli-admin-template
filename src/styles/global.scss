@@ -1,10 +1,12 @@
 :root {
   --app-bg: #f4f7fb;
   --app-text: #1f2937;
+  --app-heading: #111827;
   --app-muted: #64748b;
   --app-border: #dbe3ef;
   --app-primary: #2563eb;
   --app-surface: #ffffff;
+  --app-soft-surface: #f8fafc;
 }
 
 * {
@@ -41,6 +43,7 @@ select {
 
 .el-card {
   --el-card-border-radius: 8px;
+  border-color: var(--app-border);
 }
 
 .el-card__body {
@@ -49,4 +52,21 @@ select {
 
 .el-form-item__label {
   font-weight: 600;
+}
+
+.el-button {
+  border-radius: 8px;
+}
+
+.el-table {
+  --el-table-border-color: var(--app-border);
+  --el-table-header-bg-color: var(--app-soft-surface);
+  --el-table-header-text-color: var(--app-heading);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.el-dialog,
+.el-drawer {
+  border-radius: 8px;
 }
