@@ -20,13 +20,10 @@ function getUpdatedAt() {
   const now = new Date();
   const pad = (value: number) => String(value).padStart(2, "0");
 
-  return [
-    now.getFullYear(),
-    pad(now.getMonth() + 1),
-    pad(now.getDate()),
-  ].join("-") + ` ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(
-    now.getSeconds(),
-  )}`;
+  return (
+    [now.getFullYear(), pad(now.getMonth() + 1), pad(now.getDate())].join("-") +
+    ` ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+  );
 }
 
 export async function fetchPermissionTreeApi() {
@@ -71,4 +68,16 @@ export async function saveRolePermissionsApi(payload: {
     writeJson(ROLE_STORAGE_KEY, nextRoles);
     return nextRoles;
   }
+}
+/**获取菜单列表 */
+export async function getPerssionList(params: any) {
+  return await request.get("/permission/list", params);
+}
+/**创建菜单 */
+export async function createPermission(data: any) {
+  return await request.post("/permission/create", data);
+}
+/**修改菜单 */
+export async function updatePermission(data: any) {
+  return await request.put("/permission/update", data);
 }

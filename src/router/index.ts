@@ -41,6 +41,12 @@ const routes: Array<RouteRecordRaw> = [
         component: () => import("@/views/system/PermissionView.vue"),
         meta: { title: "权限管理", icon: "Lock" },
       },
+      {
+        path: "menu-permission",
+        name: "menu-permission",
+        component: () => import("@/views/system/MenuPermissionView.vue"),
+        meta: { title: "菜单权限管理", icon: "Menu" },
+      },
     ],
   },
   {
