@@ -4,6 +4,16 @@ export interface PermissionNode {
   children?: PermissionNode[];
 }
 
+export interface PermissionMenuNode {
+  id?: string;
+  name?: string;
+  title?: string;
+  path?: string;
+  component?: string;
+  icon?: string;
+  children?: PermissionMenuNode[];
+}
+
 export interface RoleItem {
   id: number;
   name: string;

@@ -56,6 +56,16 @@
             {{ row.sort ?? "-" }}
           </template>
         </el-table-column>
+        <el-table-column label="是否隐藏菜单" prop="is_hidden">
+          <template #default="{ row }">
+            {{ row.is_hidden ? "是" : "否" }}
+          </template>
+        </el-table-column>
+        <el-table-column label="是否缓存页面" prop="keep_alive">
+          <template #default="{ row }">
+            {{ row.keep_alive ? "是" : "否" }}
+          </template>
+        </el-table-column>
         <el-table-column label="更新时间" prop="updated_at" />
         <el-table-column label="操作" width="140">
           <template #default="{ row }">
@@ -81,7 +91,7 @@
             clearable
             :props="{
               label: 'name',
-  children: 'children',
+                children: 'children',
               
             }"
             check-strictly
@@ -105,16 +115,24 @@
           <el-input v-model="form.code" placeholder="请输入唯一权限标识" />
         </el-form-item>
 
-        <el-form-item v-if="form.type === 'menu'" label="路由地址" prop="path">
+        <el-form-item v-if="form.type !== 'button'" label="路由地址" prop="path">
           <el-input v-model="form.path" placeholder="请输入菜单访问路径" />
         </el-form-item>
 
-        <el-form-item v-if="form.type === 'menu'" label="组件地址" prop="component">
+        <el-form-item v-if="form.type !== 'button'" label="组件地址" prop="component">
           <el-input v-model="form.component" placeholder="请输入Vue组件路径" />
         </el-form-item>
 
-        <el-form-item v-if="form.type === 'menu'" label="排序" prop="sort">
+        <el-form-item v-if="form.type !== 'button'" label="排序" prop="sort">
           <el-input-number v-model="form.sort" :min="0" controls-position="right" />
+        </el-form-item>
+
+        <el-form-item v-if="form.type !== 'button'" label="是否隐藏菜单" prop="is_hidden">
+          <el-switch v-model="form.is_hidden" />
+        </el-form-item>
+
+        <el-form-item v-if="form.type === 'menu'" label="是否缓存页面" prop="keep_alive">
+          <el-switch v-model="form.keep_alive" />
         </el-form-item>
       </el-form>
 
@@ -131,7 +149,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { getPerssionList, createPermission, updatePermission } from "@/api/permission";
+import { getPerssionList, createPermission, updatePermission,permissionMenu } from "@/api/permission";
 
 type PermissionType = "menu" | "button";
 
@@ -143,6 +161,8 @@ type PermissionItem = {
   path?: string;
   component?: string;
   sort?: number;
+  is_hidden?: boolean;
+  keep_alive?: boolean;
   updatedAt: string;
   parent_id?: string;
   children?: PermissionItem[];
@@ -157,6 +177,8 @@ type FormState = {
   path?: string;
   component?: string;
   sort?: number;
+  is_hidden?: boolean;
+  keep_alive?: boolean;
 };
 
 const initialRows: PermissionItem[] = [
@@ -168,6 +190,8 @@ const initialRows: PermissionItem[] = [
     path: "/customer",
     component: "customer/index.vue",
     sort: 1,
+    is_hidden: false,
+    keep_alive: false,
     updatedAt: "2026-08-04 09:12:00",
     children: [
       {
@@ -206,6 +230,8 @@ const initialRows: PermissionItem[] = [
         path: "/system/user",
         component: "system/user/index.vue",
         sort: 1,
+        is_hidden: false,
+        keep_alive: true,
         parent_id: "system",
         updatedAt: "2026-08-04 09:17:00",
       },
@@ -231,6 +257,8 @@ const form = ref<FormState>({
   path: "",
   component: "",
   sort: 1,
+  is_hidden: false,
+  keep_alive: false,
   parent_id: "",
 });
 
@@ -240,11 +268,6 @@ const treeProps = {
   value: "id",
 };
 const treelist = ref([])
-const menuTreeData = computed((): PermissionItem[] =>
-  rows.value.filter((item: PermissionItem) => item.type === "menu"),
-);
-
-const tableData = computed(() => rows.value);
 
 const dialogTitle = computed(() => (isEdit.value ? "编辑权限" : "新增权限"));
 
@@ -282,12 +305,17 @@ const formRules = computed(() => ({
   ],
 }));
 onMounted(async () => {
-  await getPerssionListHandler();
+    await getPerssionListHandler();
+    await permissionMenuHandler();
 });
 async function getPerssionListHandler() {
   const res: any = await getPerssionList({});
-  console.log('res====================',res)
   treelist.value = res;
+}
+async function permissionMenuHandler() {
+    const res: any = await permissionMenu({});
+
+  console.log('res====================',res)
 }
 function resetForm() {
   form.value = {
@@ -297,6 +325,8 @@ function resetForm() {
     path: "",
     component: "",
     sort: 1,
+    is_hidden: false,
+    keep_alive: true,
     parent_id: "",
   };
 }
@@ -347,6 +377,8 @@ function handleEdit(item: PermissionItem) {
     path: item.path,
     component: item.component,
     sort: item.sort,
+    is_hidden: item.is_hidden ?? false,
+    keep_alive: item.keep_alive ?? false,
     parent_id: item.parent_id,
   };
   dialogVisible.value = true;
@@ -384,6 +416,8 @@ async function handleSubmit() {
       path: form.value.path,
       component: form.value.component,
       sort: form.value.sort,
+      is_hidden: form.value.is_hidden ?? false,
+      keep_alive: form.value.keep_alive ?? false,
     };
 
     if (isEdit.value && form.value.id) {

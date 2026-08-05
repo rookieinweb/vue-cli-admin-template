@@ -49,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed,onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import Menu from "./components/menu.vue";
@@ -70,6 +70,9 @@ const avatarText = computed(() =>
   (userStore.displayName || "A").slice(0, 1).toUpperCase(),
 );
 
+onMounted(() => {
+  console.log(222222222222222222)
+})
 function handleCommand(command: string) {
   if (command === "logout") {
     userStore.logout();

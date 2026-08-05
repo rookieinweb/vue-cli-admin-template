@@ -81,3 +81,7 @@ export async function createPermission(data: any) {
 export async function updatePermission(data: any) {
   return await request.put("/permission/update", data);
 }
+/**获取菜单 */
+export async function permissionMenu(params: any) {
+  return await request.get("/user/menu", params);
+}

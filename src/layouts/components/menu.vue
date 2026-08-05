@@ -25,7 +25,7 @@ export default {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, nextTick, ref, watch,onMounted } from "vue";
 import type { Component } from "vue";
 import { useRoute, useRouter, type RouteRecordRaw } from "vue-router";
 import {
@@ -35,10 +35,12 @@ import {
   Setting,
   User,
 } from "@element-plus/icons-vue";
+import { usePermissionStore } from "@/stores/permission";
 import MenuTree from "./menu-tree.vue";
 
 const route = useRoute();
 const router = useRouter();
+const permissionStore = usePermissionStore();
 const menuRef = ref<{ open: (index: string) => void }>();
 
 const iconMap: Record<string, Component> = {
@@ -49,6 +51,9 @@ const iconMap: Record<string, Component> = {
   User,
 };
 
+onMounted(() => [
+  console.log(222222222222)
+])
 function formatModuleTitle(path: string) {
   const name = path.replace(/^\//, "").split("/")[0] || "module";
   return name.charAt(0).toUpperCase() + name.slice(1);
@@ -113,7 +118,27 @@ function toMenuTree() {
     }));
 }
 
-const menuTree = computed(() => toMenuTree());
+function toPermissionMenuTree(items: Array<{ path?: string; title?: string; name?: string; children?: any[]; icon?: string }>) {
+  return items
+    .filter((item) => item.path || item.name || item.title)
+    .map((item) => ({
+      path: item.path || item.name || "/",
+      title: item.title || item.name || formatModuleTitle(item.path || item.name || "/"),
+      iconComponent: item.icon ? iconMap[item.icon as string] : undefined,
+      children: item.children?.length
+        ? toPermissionMenuTree(item.children)
+        : [],
+    }));
+}
+
+const menuTree = computed(() => {
+  console.log('permissionStore.permissionMenuLoaded111111111111111',permissionStore.permissionMenuLoaded)
+  if (permissionStore.permissionMenuLoaded && permissionStore.permissionMenu.length > 0) {
+    return toPermissionMenuTree(permissionStore.permissionMenu);
+  }
+
+  return toMenuTree();
+});
 
 const activeGroupPath = computed(() => {
   const activeGroup = menuTree.value.find(
