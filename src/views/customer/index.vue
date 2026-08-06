@@ -274,6 +274,7 @@ function openCreateDialog() {
 
 function goToDetail(id: number) {
   router.push({ name: "customer-detail", params: { id } });
+  // router.push(`customer/detail/${id}`);
 }
 
 function handleCurrentChange(val: number) {

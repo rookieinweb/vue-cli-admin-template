@@ -115,9 +115,9 @@ function resolveDynamicRouteComponent(component: string) {
   return () => import(`@/${normalizedComponent}.vue`);
 }
 
-function buildRouteName(item: PermissionMenuNode, routePath: string) {
+function buildRouteName(item: any, routePath: string) {
   return (
-    item.name ||
+    item.code ||
     item.title ||
     routePath.split("/").filter(Boolean).join("-") ||
     "dynamic-menu"
