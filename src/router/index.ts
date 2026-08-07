@@ -1,7 +1,6 @@
 import {
   createRouter,
   createWebHistory,
-  type NavigationGuardNext,
   type RouteLocationNormalized,
   type RouteRecordRaw,
 } from "vue-router";
@@ -10,209 +9,256 @@ import { usePermissionStore } from "@/stores/permission";
 import { useUserStore } from "@/stores/user";
 import type { PermissionMenuNode } from "@/types/permission";
 
+const LOGIN_PATH = "/login";
+const REGISTER_PATH = "/register";
+const DEFAULT_HOME_PATH = "/admin/dashboard";
+const whiteList = new Set([LOGIN_PATH, REGISTER_PATH]);
+
 const routes: Array<RouteRecordRaw> = [
   {
     path: "/",
-    redirect: "/admin/dashboard",
+    redirect: DEFAULT_HOME_PATH,
   },
   {
-    path: "/login",
+    path: LOGIN_PATH,
     name: "login",
     component: () => import("@/views/auth/LoginView.vue"),
     meta: { public: true, title: "登录" },
   },
   {
-    path: "/register",
+    path: REGISTER_PATH,
     name: "register",
     component: () => import("@/views/auth/RegisterView.vue"),
     meta: { public: true, title: "注册" },
   },
-  // {
-  //   path: "/admin",
-  //   component: () => import("@/layouts/AdminLayout.vue"),
-  //   meta: { requiresAuth: true, title: "系统管理" },
-  //   redirect: "/admin/dashboard",
-  //   children: [
-  //     {
-  //       path: "dashboard",
-  //       name: "dashboard",
-  //       component: () => import("@/views/dashboard/DashboardView.vue"),
-  //       meta: { title: "控制台", icon: "HomeFilled" },
-  //     },
-  //     {
-  //       path: "permission",
-  //       name: "permission",
-  //       component: () => import("@/views/system/PermissionView.vue"),
-  //       meta: { title: "权限管理", icon: "Lock" },
-  //     },
-  //     {
-  //       path: "menu-permission",
-  //       name: "menu-permission",
-  //       component: () => import("@/views/system/MenuPermissionView.vue"),
-  //       meta: { title: "菜单权限管理", icon: "Menu" },
-  //     },
-  //   ],
-  // },
-  // {
-  //   path: "/customer",
-  //   component: () => import("@/layouts/AdminLayout.vue"),
-  //   meta: { requiresAuth: true, title: "客户管理" },
-  //   redirect: "/customer/index",
-  //   children: [
-  //     {
-  //       path: "index",
-  //       name: "index",
-  //       component: () => import("@/views/customer/index.vue"),
-  //       meta: { title: "用户管理", icon: "HomeFilled" },
-  //     },
-  //     {
-  //       path: "list",
-  //       name: "list",
-  //       component: () => import("@/views/customer/list.vue"),
-  //       meta: { title: "用户列表", icon: "Lock" },
-  //     },
-  //     {
-  //       path: "detail/:id",
-  //       name: "customer-detail",
-  //       component: () => import("@/views/customer/detail.vue"),
-  //       meta: { title: "客户详情", icon: "Document", hide: true },
-  //     },
-  //   ],
-  // },
   {
     path: "/:pathMatch(.*)*",
-    redirect: "/login",
+    name: "not-found",
+    component: () => import("@/views/auth/LoginView.vue"),
   },
 ];
 
-function normalizeRoutePath(path: string) {
+type MenuPage = {
+  item: PermissionMenuNode;
+  fullPath: string;
+  component: string;
+  groupPath: string;
+  groupTitle: string;
+  groupIcon?: string;
+};
+
+let dynamicRoutesReady = false;
+let dynamicRoutesPromise: Promise<void> | null = null;
+const removeDynamicRouteCallbacks: Array<() => void> = [];
+
+const router = createRouter({
+  history: createWebHistory(process.env.BASE_URL),
+  routes,
+});
+
+function normalizeRoutePath(path?: string) {
   if (!path) {
     return "/";
   }
 
-  return path.startsWith("/") ? path : `/${path}`;
+  const normalized = path.trim().replace(/\/{2,}/g, "/");
+  return normalized.startsWith("/") ? normalized : `/${normalized}`;
 }
 
-function flattenRouteRecords(list: RouteRecordRaw[]): RouteRecordRaw[] {
-  return list.flatMap((item) => {
-    const result = [item];
-
-    if (item.children?.length) {
-      result.push(...flattenRouteRecords(item.children));
-    }
-
-    return result;
-  });
+function getRouteSegments(path: string) {
+  return normalizeRoutePath(path).split("/").filter(Boolean);
 }
 
-const staticRoutePathMap = new Map(
-  flattenRouteRecords(routes).map((record) => [
-    normalizeRoutePath(record.path),
-    record,
-  ]),
-);
-
-function resolveDynamicRouteComponent(component: string) {
-  const normalizedComponent = component.replace(/\.vue$/i, "");
-  return () => import(`@/${normalizedComponent}.vue`);
+function toChildRoutePath(groupPath: string, fullPath: string) {
+  const groupSegments = getRouteSegments(groupPath);
+  const pageSegments = getRouteSegments(fullPath);
+  return pageSegments.slice(groupSegments.length).join("/");
 }
 
-function buildRouteName(item: any, routePath: string) {
-  return (
-    item.code ||
-    item.title ||
-    routePath.split("/").filter(Boolean).join("-") ||
-    "dynamic-menu"
-  );
+function normalizeComponentPath(component: string) {
+  return component
+    .trim()
+    .replace(/^@\//, "")
+    .replace(/^src\//, "")
+    .replace(/^views\//, "")
+    .replace(/^\/+/, "")
+    .replace(/\.vue$/i, "");
 }
 
-function resolveMenuComponent(item: PermissionMenuNode) {
-  if (item.component) {
-    return resolveDynamicRouteComponent(item.component);
+function isLayoutComponent(component?: string) {
+  if (!component) {
+    return false;
   }
 
-  if (item.children?.length) {
+  const normalized = normalizeComponentPath(component).toLowerCase();
+  return normalized === "layout" || normalized.includes("layout");
+}
+
+function resolveDynamicRouteComponent(component: string) {
+  if (isLayoutComponent(component)) {
     return () => import("@/layouts/AdminLayout.vue");
   }
 
-  return undefined;
+  const normalizedComponent = normalizeComponentPath(component);
+  return () => import(`@/views/${normalizedComponent}.vue`);
 }
 
-function createRouteRecordFromMenuNode(item: PermissionMenuNode): any | null {
-  const routePath = normalizeRoutePath(
-    item.path || item.name || item.title || "/",
-  );
+function getMenuTitle(item: PermissionMenuNode, fallback: string) {
+  return item.title || item.name || fallback;
+}
 
-  if (routePath === "/") {
-    return null;
+function sanitizeRouteName(value: string) {
+  return value
+    .trim()
+    .replace(/^\//, "")
+    .replace(/[:/\\\s]+/g, "-")
+    .replace(/[^\w-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function buildRouteName(
+  item: PermissionMenuNode,
+  routePath: string,
+  usedNames: Set<string>,
+) {
+  const rawName =
+    item.code ||
+    item.name ||
+    item.title ||
+    getRouteSegments(routePath).join("-") ||
+    "dynamic-menu";
+  const baseName = sanitizeRouteName(rawName) || "dynamic-menu";
+  let routeName = baseName;
+  let index = 1;
+
+  while (usedNames.has(routeName) || router.hasRoute(routeName)) {
+    routeName = `${baseName}-${index}`;
+    index += 1;
   }
 
-  const routeName = buildRouteName(item, routePath);
-  const component: any = resolveMenuComponent(item);
+  usedNames.add(routeName);
+  return routeName;
+}
 
-  if (!component) {
-    return null;
-  }
+function shouldUseMenuNode(item: PermissionMenuNode) {
+  return item.type !== "button" && Boolean(item.path);
+}
 
-  return {
-    path: routePath,
-    name: routeName,
-    component,
-    ...(item.children?.length
-      ? { children: buildChildRouteRecords(item.children) }
-      : {}),
-    meta: {
-      requiresAuth: true,
-      title: item.title || item.name || routeName,
-      icon: item.icon,
+function isHiddenMenuNode(item: PermissionMenuNode) {
+  return item.hide === true || item.is_hidden === true;
+}
+
+function getGroupPath(fullPath: string) {
+  const firstSegment = getRouteSegments(fullPath)[0];
+  return firstSegment ? `/${firstSegment}` : "/";
+}
+
+function collectMenuPages(
+  menuList: PermissionMenuNode[],
+  parent?: PermissionMenuNode,
+): MenuPage[] {
+  const pages: MenuPage[] = [];
+
+  menuList.forEach((item) => {
+    const fullPath = normalizeRoutePath(item.path);
+    const component = item.component?.trim();
+    const hasPageComponent = Boolean(component && !isLayoutComponent(component));
+
+    if (shouldUseMenuNode(item) && hasPageComponent && fullPath !== "/") {
+      const groupPath = getGroupPath(fullPath);
+      const groupTitle = getMenuTitle(parent || item, groupPath.replace("/", ""));
+
+      pages.push({
+        item,
+        fullPath,
+        component: component as string,
+        groupPath,
+        groupTitle,
+        groupIcon: parent?.icon || item.icon,
+      });
+    }
+
+    if (item.children?.length) {
+      pages.push(...collectMenuPages(item.children, item));
+    }
+  });
+
+  return pages;
+}
+
+function createFallbackMenu(): PermissionMenuNode[] {
+  return [
+    {
+      name: "系统管理",
+      title: "系统管理",
+      path: "/admin",
+      component: "Layout",
+      icon: "Setting",
+      children: [
+        {
+          name: "dashboard",
+          title: "控制台",
+          path: DEFAULT_HOME_PATH,
+          component: "dashboard/DashboardView.vue",
+          icon: "HomeFilled",
+        },
+      ],
     },
-  };
-}
-
-function buildChildRouteRecords(
-  children: PermissionMenuNode[],
-): RouteRecordRaw[] {
-  return children
-    .map((child) => createRouteRecordFromMenuNode(child))
-    .filter((record): record is RouteRecordRaw => record !== null);
+  ];
 }
 
 function buildDynamicRouteRecords(
   menuList: PermissionMenuNode[],
 ): RouteRecordRaw[] {
-  const records: RouteRecordRaw[] = [];
+  const sourceMenu = menuList.length ? menuList : createFallbackMenu();
+  const pages = collectMenuPages(sourceMenu);
+  const routePages = pages.length ? pages : collectMenuPages(createFallbackMenu());
+  const usedNames = new Set<string>();
+  const groupMap = new Map<string, RouteRecordRaw & { children: RouteRecordRaw[] }>();
 
-  const walk = (list: PermissionMenuNode[]) => {
-    list.forEach((item) => {
-      const routePath = normalizeRoutePath(
-        item.path || item.name || item.title || "/",
-      );
+  routePages.forEach((page) => {
+    const groupName = `dynamic-group-${sanitizeRouteName(page.groupPath)}`;
 
-      if (routePath === "/") {
-        return;
-      }
+    if (!groupMap.has(page.groupPath)) {
+      groupMap.set(page.groupPath, {
+        path: page.groupPath,
+        name: groupName,
+        component: () => import("@/layouts/AdminLayout.vue"),
+        meta: {
+          requiresAuth: true,
+          title: page.groupTitle,
+          icon: page.groupIcon,
+        },
+        children: [],
+      });
+    }
 
-      if (staticRoutePathMap.has(routePath)) {
-        if (item.children?.length) {
-          walk(item.children);
-        }
-        return;
-      }
+    const group = groupMap.get(page.groupPath);
+    if (!group) {
+      return;
+    }
 
-      const record = createRouteRecordFromMenuNode(item);
-      if (record) {
-        records.push(record);
-      }
-
-      if (item.children?.length) {
-        walk(item.children);
-      }
+    group.children.push({
+      path: toChildRoutePath(page.groupPath, page.fullPath),
+      name: buildRouteName(page.item, page.fullPath, usedNames),
+      component: resolveDynamicRouteComponent(page.component),
+      meta: {
+        requiresAuth: true,
+        title: getMenuTitle(page.item, page.fullPath),
+        icon: page.item.icon,
+        hide: isHiddenMenuNode(page.item),
+        keepAlive: page.item.keep_alive,
+      },
     });
-  };
+  });
 
-  walk(menuList);
-
-  return records;
+  return Array.from(groupMap.values()).map((group) => ({
+    ...group,
+    redirect: group.children.some((child) => child.path === "")
+      ? undefined
+      : `${group.path}/${group.children[0]?.path || ""}`.replace(/\/$/, ""),
+  }));
 }
 
 function ensureDynamicRoutes(menuList: PermissionMenuNode[]) {
@@ -222,25 +268,32 @@ function ensureDynamicRoutes(menuList: PermissionMenuNode[]) {
     const routeName = String(record.name);
 
     if (!router.hasRoute(routeName)) {
-      router.addRoute(record);
+      removeDynamicRouteCallbacks.push(router.addRoute(record));
     }
   });
 }
 
-function isCatchAllRoute(route: {
-  matched: RouteLocationNormalized["matched"];
-}) {
+export function resetDynamicRoutes() {
+  removeDynamicRouteCallbacks.splice(0).forEach((removeRoute) => {
+    removeRoute();
+  });
+  dynamicRoutesReady = false;
+  dynamicRoutesPromise = null;
+}
+
+function isCatchAllRoute(route: Pick<RouteLocationNormalized, "matched">) {
   return route.matched.some((record) => record.path.includes("pathMatch"));
 }
 
-function getFirstMenuPath(menuList: PermissionMenuNode[]): string | null {
+function getFirstMenuPath(menuList: PermissionMenuNode[]): string {
   for (const item of menuList) {
-    const routePath = normalizeRoutePath(
-      item.path || item.name || item.title || "/",
-    );
-
-    if (routePath !== "/" && item.component) {
-      return routePath;
+    if (
+      shouldUseMenuNode(item) &&
+      !isHiddenMenuNode(item) &&
+      item.component &&
+      !isLayoutComponent(item.component)
+    ) {
+      return normalizeRoutePath(item.path);
     }
 
     if (item.children?.length) {
@@ -251,64 +304,78 @@ function getFirstMenuPath(menuList: PermissionMenuNode[]): string | null {
     }
   }
 
-  return null;
+  return DEFAULT_HOME_PATH;
 }
 
 async function setupDynamicRoutes(
   permissionStore: ReturnType<typeof usePermissionStore>,
 ) {
-  if (!permissionStore.permissionMenuLoaded && !permissionStore.menuLoading) {
-    await permissionStore.loadUserMenu();
+  if (dynamicRoutesReady) {
+    return;
   }
 
-  if (permissionStore.permissionMenu.length > 0) {
-    ensureDynamicRoutes(permissionStore.permissionMenu);
+  if (!dynamicRoutesPromise) {
+    dynamicRoutesPromise = (async () => {
+      const shouldForceFetch =
+        permissionStore.menuFetched && permissionStore.permissionMenu.length === 0;
+
+      await permissionStore.loadUserMenu(shouldForceFetch);
+      ensureDynamicRoutes(permissionStore.permissionMenu);
+      dynamicRoutesReady = true;
+    })().finally(() => {
+      dynamicRoutesPromise = null;
+    });
   }
+
+  await dynamicRoutesPromise;
 }
 
-const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes,
-});
-
-router.beforeEach(async (to, _from, next: NavigationGuardNext) => {
+router.beforeEach(async (to) => {
   const userStore = useUserStore(pinia);
   const permissionStore = usePermissionStore(pinia);
   const hasToken = Boolean(userStore.token);
-
-  if (to.meta.requiresAuth && !hasToken) {
-    next({ path: "/login", query: { redirect: to.fullPath } });
-    return;
-  }
+  const isWhiteRoute = whiteList.has(to.path);
 
   if (!hasToken) {
-    next();
-    return;
+    if (isWhiteRoute) {
+      return true;
+    }
+
+    return {
+      path: LOGIN_PATH,
+      query: { redirect: to.fullPath },
+      replace: true,
+    };
   }
 
   await setupDynamicRoutes(permissionStore);
 
-  const defaultPath =
-    getFirstMenuPath(permissionStore.permissionMenu) || "/admin/dashboard";
+  const defaultPath = getFirstMenuPath(permissionStore.permissionMenu);
 
-  if (to.meta.public) {
-    next({ path: defaultPath, replace: true });
-    return;
+  if (isWhiteRoute || to.meta.public) {
+    return to.path === defaultPath
+      ? true
+      : { path: defaultPath, replace: true };
   }
 
   if (isCatchAllRoute(to)) {
     const resolved = router.resolve(to.fullPath);
 
     if (!isCatchAllRoute(resolved)) {
-      next({ ...to, replace: true });
-      return;
+      return {
+        path: to.path,
+        query: to.query,
+        hash: to.hash,
+        replace: true,
+      };
     }
 
-    next({ path: defaultPath, replace: true });
-    return;
+    return to.path === defaultPath
+      ? true
+      : { path: defaultPath, replace: true };
   }
 
-  next();
+  return true;
 });
 
 export default router;

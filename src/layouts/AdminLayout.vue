@@ -49,14 +49,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed,onMounted } from "vue";
+import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { resetDynamicRoutes } from "@/router";
+import { usePermissionStore } from "@/stores/permission";
 import { useUserStore } from "@/stores/user";
 import Menu from "./components/menu.vue";
 
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 const currentTitle = computed(() => {
   const matchedRoute = [...route.matched].reverse().find((record) => {
@@ -70,12 +73,11 @@ const avatarText = computed(() =>
   (userStore.displayName || "A").slice(0, 1).toUpperCase(),
 );
 
-onMounted(() => {
-  console.log(222222222222222222)
-})
 function handleCommand(command: string) {
   if (command === "logout") {
     userStore.logout();
+    permissionStore.resetUserMenu();
+    resetDynamicRoutes();
     router.push("/login");
   }
 }

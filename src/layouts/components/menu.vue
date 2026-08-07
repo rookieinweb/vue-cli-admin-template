@@ -25,17 +25,19 @@ export default {
 </script>
 
 <script setup lang="ts">
-import { computed, nextTick, ref, watch,onMounted } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { Component } from "vue";
 import { useRoute, useRouter, type RouteRecordRaw } from "vue-router";
 import {
   Document,
   HomeFilled,
   Lock,
+  Menu as MenuIcon,
   Setting,
   User,
 } from "@element-plus/icons-vue";
 import { usePermissionStore } from "@/stores/permission";
+import type { PermissionMenuNode } from "@/types/permission";
 import MenuTree from "./menu-tree.vue";
 
 const route = useRoute();
@@ -47,13 +49,11 @@ const iconMap: Record<string, Component> = {
   Document,
   HomeFilled,
   Lock,
+  Menu: MenuIcon,
   Setting,
   User,
 };
 
-onMounted(() => [
-  console.log(222222222222)
-])
 function formatModuleTitle(path: string) {
   const name = path.replace(/^\//, "").split("/")[0] || "module";
   return name.charAt(0).toUpperCase() + name.slice(1);
@@ -91,6 +91,15 @@ function isMenuLeaf(routeRecord: RouteRecordRaw) {
   );
 }
 
+function isVisiblePermissionMenu(item: PermissionMenuNode) {
+  return (
+    item.type !== "button" &&
+    item.hide !== true &&
+    item.is_hidden !== true &&
+    Boolean(item.path)
+  );
+}
+
 function toMenuTree() {
   return router.options.routes
     .filter(
@@ -118,21 +127,37 @@ function toMenuTree() {
     }));
 }
 
-function toPermissionMenuTree(items: Array<{ path?: string; title?: string; name?: string; children?: any[]; icon?: string }>) {
+function toPermissionMenuTree(
+  items: PermissionMenuNode[],
+  parentPath = "",
+): Array<{
+  path: string;
+  title: string;
+  iconComponent?: Component;
+  children: ReturnType<typeof toPermissionMenuTree>;
+}> {
   return items
-    .filter((item) => item.path || item.name || item.title)
-    .map((item) => ({
-      path: item.path || item.name || "/",
-      title: item.title || item.name || formatModuleTitle(item.path || item.name || "/"),
-      iconComponent: item.icon ? iconMap[item.icon as string] : undefined,
-      children: item.children?.length
-        ? toPermissionMenuTree(item.children)
-        : [],
-    }));
+    .map((item) => {
+      const path = item.path ? buildMenuPath(parentPath, item.path) : "";
+      const children = item.children?.length
+        ? toPermissionMenuTree(item.children, path || parentPath)
+        : [];
+
+      if (!isVisiblePermissionMenu(item) && !children.length) {
+        return null;
+      }
+
+      return {
+        path,
+        title: item.title || item.name || formatModuleTitle(path),
+        iconComponent: item.icon ? iconMap[item.icon as string] : undefined,
+        children,
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
 }
 
 const menuTree = computed(() => {
-  console.log('permissionStore.permissionMenuLoaded111111111111111',permissionStore.permissionMenuLoaded)
   if (permissionStore.permissionMenuLoaded && permissionStore.permissionMenu.length > 0) {
     return toPermissionMenuTree(permissionStore.permissionMenu);
   }

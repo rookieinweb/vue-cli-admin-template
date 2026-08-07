@@ -149,9 +149,13 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { getPerssionList, createPermission, updatePermission,permissionMenu } from "@/api/permission";
+import {
+  getPerssionList,
+  createPermission,
+  updatePermission,
+} from "@/api/permission";
 
-type PermissionType = "menu" | "button";
+type PermissionType = "dir" | "menu" | "button";
 
 type PermissionItem = {
   id: string;
@@ -179,6 +183,18 @@ type FormState = {
   sort?: number;
   is_hidden?: boolean;
   keep_alive?: boolean;
+};
+
+type PermissionPayload = {
+  name: string;
+  type: PermissionType;
+  code: string;
+  parent_id: string | number;
+  path?: string;
+  component?: string;
+  sort?: number;
+  is_hidden: boolean;
+  keep_alive: boolean;
 };
 
 const initialRows: PermissionItem[] = [
@@ -267,7 +283,7 @@ const treeProps = {
   children: "children",
   value: "id",
 };
-const treelist = ref([])
+const treelist = ref<PermissionItem[]>([])
 
 const dialogTitle = computed(() => (isEdit.value ? "编辑权限" : "新增权限"));
 
@@ -306,16 +322,10 @@ const formRules = computed(() => ({
 }));
 onMounted(async () => {
     await getPerssionListHandler();
-    await permissionMenuHandler();
 });
 async function getPerssionListHandler() {
-  const res: any = await getPerssionList({});
-  treelist.value = res;
-}
-async function permissionMenuHandler() {
-    const res: any = await permissionMenu({});
-
-  console.log('res====================',res)
+  const res = await getPerssionList({});
+  treelist.value = res as PermissionItem[];
 }
 function resetForm() {
   form.value = {
@@ -407,7 +417,7 @@ async function handleSubmit() {
       return;
     }
 
-    const payload: any = {
+    const payload: PermissionPayload = {
       name: form.value.name,
       type: form.value.type,
       code: form.value.code,

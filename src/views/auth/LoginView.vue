@@ -71,12 +71,15 @@
 import { reactive, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import type { FormInstance, FormRules } from "element-plus";
+import { resetDynamicRoutes } from "@/router";
+import { usePermissionStore } from "@/stores/permission";
 import { useUserStore } from "@/stores/user";
 import type { LoginForm } from "@/types/auth";
 
 const router = useRouter();
 const route = useRoute();
 const userStore = useUserStore();
+const permissionStore = usePermissionStore();
 
 const loading = ref(false);
 const remember = ref(true);
@@ -103,11 +106,13 @@ async function handleLogin() {
 
   try {
     await userStore.login(form);
+    permissionStore.resetUserMenu();
+    resetDynamicRoutes();
     const redirect =
       typeof route.query.redirect === "string"
         ? route.query.redirect
         : "/admin/dashboard";
-    router.replace(redirect);
+    await router.replace(redirect);
   } finally {
     loading.value = false;
   }

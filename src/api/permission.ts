@@ -3,7 +3,11 @@ import {
   defaultRoles,
   permissionTree as defaultPermissionTree,
 } from "@/data/permissions";
-import type { PermissionNode, RoleItem } from "@/types/permission";
+import type {
+  PermissionMenuNode,
+  PermissionNode,
+  RoleItem,
+} from "@/types/permission";
 import { readJson, writeJson } from "@/utils/storage";
 
 const ROLE_STORAGE_KEY = "vue-admin-permission-roles";
@@ -69,19 +73,24 @@ export async function saveRolePermissionsApi(payload: {
     return nextRoles;
   }
 }
+type PermissionQuery = Record<string, unknown>;
+type PermissionPayload = Record<string, unknown>;
+
 /**获取菜单列表 */
-export async function getPerssionList(params: any) {
-  return await request.get("/permission/list", params);
+export async function getPerssionList(params: PermissionQuery) {
+  return await request.get<PermissionMenuNode[]>("/permission/list", params);
 }
 /**创建菜单 */
-export async function createPermission(data: any) {
-  return await request.post("/permission/create", data);
+export async function createPermission(data: PermissionPayload) {
+  return await request.post<unknown>("/permission/create", data);
 }
 /**修改菜单 */
-export async function updatePermission(data: any) {
-  return await request.put("/permission/update", data);
+export async function updatePermission(data: PermissionPayload) {
+  return await request.put<unknown>("/permission/update", data);
 }
 /**获取菜单 */
-export async function permissionMenu(params: any) {
-  return await request.get("/user/menu", params);
+export async function permissionMenu(params: PermissionQuery) {
+  return await request.get<
+    PermissionMenuNode[] | { list?: PermissionMenuNode[]; data?: PermissionMenuNode[] }
+  >("/user/menu", params);
 }

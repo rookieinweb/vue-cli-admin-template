@@ -12,6 +12,26 @@ import type {
   RoleItem,
 } from "@/types/permission";
 
+type PermissionMenuResult =
+  | PermissionMenuNode[]
+  | { list?: PermissionMenuNode[]; data?: PermissionMenuNode[] };
+
+function normalizePermissionMenu(result: PermissionMenuResult) {
+  if (Array.isArray(result)) {
+    return result;
+  }
+
+  if (Array.isArray(result.list)) {
+    return result.list;
+  }
+
+  if (Array.isArray(result.data)) {
+    return result.data;
+  }
+
+  return [];
+}
+
 export const usePermissionStore = defineStore("permission", () => {
   const permissionTree = ref<PermissionNode[]>([]);
   const permissionMenu = ref<PermissionMenuNode[]>([]);
@@ -19,6 +39,7 @@ export const usePermissionStore = defineStore("permission", () => {
   const activeRoleId = ref<number>(0);
   const loading = ref(false);
   const menuLoading = ref(false);
+  const menuFetched = ref(false);
 
   const activeRole = computed(
     () => roles.value.find((role) => role.id === activeRoleId.value) ?? null,
@@ -45,8 +66,12 @@ export const usePermissionStore = defineStore("permission", () => {
     }
   }
 
-  async function loadUserMenu() {
-    if (menuLoading.value || permissionMenuLoaded.value) {
+  async function loadUserMenu(force = false) {
+    if (menuLoading.value) {
+      return;
+    }
+
+    if (!force && menuFetched.value) {
       return;
     }
 
@@ -54,19 +79,19 @@ export const usePermissionStore = defineStore("permission", () => {
 
     try {
       const result = await fetchPermissionMenuApi({});
-      const payload = result;
-      const nextMenu = Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload)
-        ? payload
-        : Array.isArray(payload)
-        ? payload
-        : [];
-      console.log("nextMenu", nextMenu);
-      permissionMenu.value = nextMenu;
+      permissionMenu.value = normalizePermissionMenu(result);
+    } catch (err) {
+      permissionMenu.value = [];
     } finally {
+      menuFetched.value = true;
       menuLoading.value = false;
     }
+  }
+
+  function resetUserMenu() {
+    permissionMenu.value = [];
+    menuFetched.value = false;
+    menuLoading.value = false;
   }
 
   function selectRole(roleId: number) {
@@ -97,8 +122,10 @@ export const usePermissionStore = defineStore("permission", () => {
     loading,
     menuLoading,
     permissionMenuLoaded,
+    menuFetched,
     loadCatalog,
     loadUserMenu,
+    resetUserMenu,
     selectRole,
     savePermissions,
   };

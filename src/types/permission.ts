@@ -6,11 +6,16 @@ export interface PermissionNode {
 
 export interface PermissionMenuNode {
   id?: string;
+  code?: string;
   name?: string;
   title?: string;
+  type?: "dir" | "menu" | "button" | string;
   path?: string;
   component?: string;
   icon?: string;
+  hide?: boolean;
+  is_hidden?: boolean;
+  keep_alive?: boolean;
   children?: PermissionMenuNode[];
 }
 
