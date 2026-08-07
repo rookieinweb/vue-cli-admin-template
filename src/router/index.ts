@@ -1,6 +1,8 @@
 import {
   createRouter,
   createWebHistory,
+  type NavigationGuardNext,
+  type RouteLocationNormalized,
   type RouteRecordRaw,
 } from "vue-router";
 import { pinia } from "@/stores";
@@ -220,10 +222,48 @@ function ensureDynamicRoutes(menuList: PermissionMenuNode[]) {
     const routeName = String(record.name);
 
     if (!router.hasRoute(routeName)) {
-      console.log("record", record);
       router.addRoute(record);
     }
   });
+}
+
+function isCatchAllRoute(route: {
+  matched: RouteLocationNormalized["matched"];
+}) {
+  return route.matched.some((record) => record.path.includes("pathMatch"));
+}
+
+function getFirstMenuPath(menuList: PermissionMenuNode[]): string | null {
+  for (const item of menuList) {
+    const routePath = normalizeRoutePath(
+      item.path || item.name || item.title || "/",
+    );
+
+    if (routePath !== "/" && item.component) {
+      return routePath;
+    }
+
+    if (item.children?.length) {
+      const childPath = getFirstMenuPath(item.children);
+      if (childPath) {
+        return childPath;
+      }
+    }
+  }
+
+  return null;
+}
+
+async function setupDynamicRoutes(
+  permissionStore: ReturnType<typeof usePermissionStore>,
+) {
+  if (!permissionStore.permissionMenuLoaded && !permissionStore.menuLoading) {
+    await permissionStore.loadUserMenu();
+  }
+
+  if (permissionStore.permissionMenu.length > 0) {
+    ensureDynamicRoutes(permissionStore.permissionMenu);
+  }
 }
 
 const router = createRouter({
@@ -231,35 +271,44 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, _from, next: NavigationGuardNext) => {
   const userStore = useUserStore(pinia);
   const permissionStore = usePermissionStore(pinia);
   const hasToken = Boolean(userStore.token);
-  console.log(55555555555);
-  if (hasToken) {
-    if (!permissionStore.permissionMenuLoaded && !permissionStore.menuLoading) {
-      await permissionStore.loadUserMenu();
-      console.log(11111111111);
-    }
-
-    if (permissionStore.permissionMenu.length > 0) {
-      ensureDynamicRoutes(permissionStore.permissionMenu);
-      console.log(22222222222, permissionStore.permissionMenu);
-    }
-  }
 
   if (to.meta.requiresAuth && !hasToken) {
-    return {
-      path: "/login",
-      query: { redirect: to.fullPath },
-    };
+    next({ path: "/login", query: { redirect: to.fullPath } });
+    return;
   }
 
-  if (to.meta.public && hasToken) {
-    return "/admin/dashboard";
+  if (!hasToken) {
+    next();
+    return;
   }
 
-  return true;
+  await setupDynamicRoutes(permissionStore);
+
+  const defaultPath =
+    getFirstMenuPath(permissionStore.permissionMenu) || "/admin/dashboard";
+
+  if (to.meta.public) {
+    next({ path: defaultPath, replace: true });
+    return;
+  }
+
+  if (isCatchAllRoute(to)) {
+    const resolved = router.resolve(to.fullPath);
+
+    if (!isCatchAllRoute(resolved)) {
+      next({ ...to, replace: true });
+      return;
+    }
+
+    next({ path: defaultPath, replace: true });
+    return;
+  }
+
+  next();
 });
 
 export default router;
