@@ -15,6 +15,7 @@ export interface RegisterForm {
   id_card: string;
   gender: number;
   other: string;
+  role_id: number;
 }
 
 export interface UserProfile {

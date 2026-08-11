@@ -105,7 +105,21 @@
               </el-form-item>
             </el-col>
           </el-row>
-
+          <el-row :gutter="16">
+            <el-col :xs="24" :sm="12">
+              <el-form-item label="角色类型" prop="role_id">
+                <el-select
+                  v-model="form.role_id"
+                  placeholder="请选择角色"
+                  style="width: 100%"
+                >
+                  <el-option label="管理员" :value="1" />
+                  <el-option label="销售" :value="2" />
+                  <el-option label="客服" :value="3" />
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
           <el-form-item label="其他信息" prop="other">
             <el-input
               v-model="form.other"
@@ -114,6 +128,7 @@
               placeholder="请输入其他备注信息"
             />
           </el-form-item>
+          
 
           <div class="register-card__footer">
             <el-link type="primary" @click="router.push('/login')">
@@ -164,6 +179,7 @@ const form = reactive<RegisterForm>({
   id_card: "",
   gender: 0,
   other: "",
+  role_id: 1,
 });
 
 const idCardPattern = /^(?:\d{15}|\d{17}[\dXx])$/;
@@ -242,6 +258,7 @@ async function handleRegister() {
   loading.value = true;
 
   try {
+    form.role_id = 1;
     await userStore.register(form);
     ElMessage.success("注册成功，请使用新账号登录");
     router.push({ path: "/login", query: { account: form.username } });
