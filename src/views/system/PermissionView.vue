@@ -9,7 +9,7 @@
               <el-tag type="info">{{ permissionStore.roles.length }} 个角色</el-tag>
             </div>
           </template>
-
+          <!-- {{ permissionStore.roles }} -->
           <el-empty
             v-if="!permissionStore.roles.length"
             description="暂无角色数据"
@@ -24,12 +24,12 @@
               @click="permissionStore.selectRole(role.id)"
             >
               <div>
-                <h3>{{ role.name }}</h3>
-                <p>{{ role.description }}</p>
+                <h3>{{ role.role_name }}</h3>
+                <p>{{ role.remark }}</p>
               </div>
               <div class="permission-page__role-meta">
-                <span>{{ role.permissionIds.length }} 项权限</span>
-                <small>更新于 {{ role.updatedAt }}</small>
+                <span>{{ role.permissions.length }} 项权限</span>
+                <small>更新于 {{ role.update_time }}</small>
               </div>
             </button>
           </div>
@@ -43,7 +43,7 @@
               <span>权限树</span>
               <div class="permission-page__actions">
                 <el-tag type="success">
-                  {{ activeRole?.name || "未选择角色" }}
+                  {{ activeRole?.role_name || "未选择角色" }}
                 </el-tag>
                 <el-button type="primary" :loading="saving" @click="handleSave">
                   保存权限
@@ -90,7 +90,7 @@ const checkedKeys = ref<string[]>([]);
 const saving = ref(false);
 
 const treeProps = {
-  label: "label",
+  label: "name",
   children: "children",
 };
 
@@ -98,9 +98,9 @@ const activeRole = computed(() => permissionStore.activeRole);
 const topLevelCount = computed(() => permissionStore.permissionTree.length);
 
 function syncCheckedKeys() {
-  const nextKeys = activeRole.value?.permissionIds ?? [];
+  const nextKeys = activeRole.value?.permissions ?? [];
   checkedKeys.value = [...nextKeys];
-
+  console.log('nextKeys=========================>',nextKeys)
   nextTick(() => {
     treeRef.value?.setCheckedKeys(nextKeys);
   });

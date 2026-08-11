@@ -32,7 +32,7 @@ function getUpdatedAt() {
 
 export async function fetchPermissionTreeApi() {
   try {
-    return await request.get<PermissionNode[]>("/permissions/tree", {
+    return await request.get<PermissionNode[]>("/permission/list", {
       showError: false,
     });
   } catch {
@@ -41,13 +41,9 @@ export async function fetchPermissionTreeApi() {
 }
 
 export async function fetchRolesApi() {
-  try {
-    return await request.get<RoleItem[]>("/permissions/roles", {
-      showError: false,
-    });
-  } catch {
-    return readLocalRoles();
-  }
+  return await request.get<RoleItem[]>("/role/list", {
+    showError: false,
+  });
 }
 
 export async function saveRolePermissionsApi(payload: {
@@ -55,7 +51,7 @@ export async function saveRolePermissionsApi(payload: {
   permissionIds: string[];
 }) {
   try {
-    return await request.post<RoleItem[]>("/permissions/roles/save", payload, {
+    return await request.put<RoleItem>(`/role/${payload.roleId}/permissions`, payload, {
       showError: false,
     });
   } catch {

@@ -14,7 +14,7 @@
     <section class="stats-grid">
       <el-card v-for="item in stats" :key="item.label" class="stat-card" shadow="never">
         <div class="stat-card__label">{{ item.label }}</div>
-        <div class="stat-card__value">{{ item.value }}</div>
+        <div class="stat-card__value">{{ overViewForm[item.value] }}</div>
         <div class="stat-card__tip">{{ item.tip }}</div>
       </el-card>
     </section>
@@ -47,30 +47,31 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import * as echarts from 'echarts';
+import dashboardApi from '@/api/dashboard';
 
 const stats = [
   {
     label: '客户总数',
-    value: '1280',
+    value: 'effectiveTotal',
     tip: '累计有效客户',
   },
   {
     label: '今日新增',
-    value: '56',
-    tip: '比昨天增长 8%',
+    value: 'todayCreateNum',
+    tip: '新增客户数量',
   },
   {
     label: '待跟进',
-    value: '132',
+    value: 'todayFollowNum',
     tip: '需今日回访',
   },
   {
     label: '成交客户',
-    value: '245',
+    value: 'MonthlyTransactionVolume',
     tip: '本月已成交',
   },
 ];
-
+const overViewForm = ref({});
 const lineChartRef = ref<HTMLElement | null>(null);
 const pieChartRef = ref<HTMLElement | null>(null);
 const funnelChartRef = ref<HTMLElement | null>(null);
@@ -178,9 +179,16 @@ const resizeCharts = () => {
 };
 
 onMounted(() => {
+  getDashboardData();
   renderCharts();
   window.addEventListener('resize', resizeCharts);
 });
+/**获取看板数据 */
+const getDashboardData = async () => {
+  const res = await dashboardApi.getOverview({});
+  console.log('res', res);
+  overViewForm.value = res;
+};
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeCharts);

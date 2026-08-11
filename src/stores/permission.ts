@@ -57,10 +57,11 @@ export const usePermissionStore = defineStore("permission", () => {
 
       permissionTree.value = treeResult;
       roles.value = rolesResult;
-
       if (!activeRoleId.value && roles.value.length > 0) {
         activeRoleId.value = roles.value[0].id;
       }
+
+      console.log('rolesResult=========================>',roles.value)
     } finally {
       loading.value = false;
     }
