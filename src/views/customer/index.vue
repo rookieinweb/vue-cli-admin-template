@@ -32,10 +32,7 @@
               style="width: 120px"
             >
               <el-option label="全部" value="" />
-              <el-option label="潜在客户" value="潜在客户" />
-              <el-option label="意向" value="意向" />
-              <el-option label="成交" value="成交" />
-              <el-option label="流失" value="流失" />
+              <el-option v-for="item in customerStauts" :key="item.value" :label="item.label" :value="item.value" />
             </el-select>
           </el-form-item>
 
@@ -50,13 +47,14 @@
         <el-table-column prop="customer_name" label="客户姓名" />
         <el-table-column prop="phone" label="手机号" />
         <el-table-column prop="customer_source" label="来源" />
-        <el-table-column prop="customer_status" label="状态" />
+        <el-table-column prop="customer_status" label="状态" :formatter="formatCustomerStatus" />
         <el-table-column prop="owner.username" label="负责人" />
         <el-table-column prop="remark" label="备注" />
         <el-table-column prop="create_time" label="创建时间" />
-        <el-table-column label="操作" width="100">
+        <el-table-column label="操作" width="150">
           <template #default="scope">
             <el-button type="text" size="small" @click="goToDetail(scope.row.id)">查看</el-button>
+            <el-button type="text" size="small" @click="openUpdateDialog(scope.row)">更新</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -73,7 +71,7 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" title="新增客户" width="560px">
+    <el-dialog v-model="dialogVisible" :title="customerForm.id ? '更新客户' : '新增客户'" width="560px">
       <el-form
         :model="customerForm"
         label-width="90px"
@@ -107,10 +105,7 @@
             placeholder="请选择状态"
             style="width: 100%"
           >
-            <el-option label="潜在客户" value="潜在客户" />
-            <el-option label="意向" value="意向" />
-            <el-option label="成交" value="成交" />
-            <el-option label="流失" value="流失" />
+            <el-option v-for="item in customerStauts" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
         </el-form-item>
         
@@ -159,6 +154,7 @@ import { ElMessage } from "element-plus";
 import type { FormInstance } from "element-plus";
 import validate from "@/utils/validate";
 import customerApi from "@/api/customer";
+import { CUSTOMER_STATUS_MAP } from "@/utils/menu";
 
 interface CustomerItem {
   id: number;
@@ -195,46 +191,29 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
 });
-
-const customers = ref<CustomerItem[]>([
-  {
-    id: 1,
-    customer_name: "张三",
-    phone: "13888888888",
-    customer_source: "微信",
-    customer_status: "意向",
-    owner: { username: "小王" },
-    remark: "跟进中",
-    create_time: "2026-07-21",
-  },
-  {
-    id: 2,
-    customer_name: "李四",
-    phone: "13988888888",
-    customer_source: "官网",
-    customer_status: "成交",
-    owner: { username: "小李" },
-    remark: "已签约",
-    create_time: "2026-07-22",
-  },
-]);
+const customerStauts = ref(Object.keys(CUSTOMER_STATUS_MAP).map(key => ({
+  label: CUSTOMER_STATUS_MAP[key],
+  value: key,
+})));
+const customers = ref<CustomerItem[]>([]);
 
 onMounted(async () => {
   listCustomer();
 });
-
-const customerForm = reactive({
+const orginalForm = reactive({
+  id: null,
   customerName: "",
   phone: "",
   source: "微信",
-  status: "潜在客户",
+  status: "potential",
   manager: "销售A",
   remark: "",
 });
+const customerForm = reactive({...orginalForm});
 
-
-
-
+function formatCustomerStatus(row: CustomerItem) {
+  return CUSTOMER_STATUS_MAP[row.customer_status || 'potential'] || '未知';
+}
 /**获取客户列表 */
 async function listCustomer() {
   loading.value = true;
@@ -267,8 +246,20 @@ function resetSearch() {
   pagination.currentPage = 1;
   listCustomer();
 }
+/** 打开更新客户弹窗 */
+function openUpdateDialog(row: CustomerItem) {
+  customerForm.id = row.id;
+  customerForm.customerName = row.customer_name || "";
+  customerForm.phone = row.phone || "";
+  customerForm.source = row.customer_source || "微信";
+  customerForm.status = row.customer_status || "potential";
+  customerForm.manager = row.owner?.username || "销售A";
+  customerForm.remark = row.remark || "";
+  dialogVisible.value = true;
+}
 
 function openCreateDialog() {
+  Object.assign(customerForm, orginalForm);
   dialogVisible.value = true;
 }
 
@@ -289,8 +280,13 @@ const closeCreateDialog = () => {
 async function handleSave() {
   const valid = await createForm.value?.validate().catch(() => false);
   if (!valid) return;
-  await customerApi.createCustomer(customerForm);
-  ElMessage.success("新增成功！");
+  if (customerForm.id) {
+    await customerApi.updateCustomer(customerForm);
+    ElMessage.success("更新成功！");
+  } else {
+    await customerApi.createCustomer(customerForm);
+    ElMessage.success("新增成功！");
+  }
   closeCreateDialog();
   listCustomer();
 }

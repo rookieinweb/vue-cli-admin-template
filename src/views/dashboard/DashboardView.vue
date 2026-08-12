@@ -14,7 +14,7 @@
     <section class="stats-grid">
       <el-card v-for="item in stats" :key="item.label" class="stat-card" shadow="never">
         <div class="stat-card__label">{{ item.label }}</div>
-        <div class="stat-card__value">{{ overViewForm[item.value] }}</div>
+        <div class="stat-card__value">{{ overViewDetail[item.value] }}</div>
         <div class="stat-card__tip">{{ item.tip }}</div>
       </el-card>
     </section>
@@ -71,11 +71,11 @@ const stats = [
     tip: '本月已成交',
   },
 ];
-const overViewForm = ref({});
+const overViewDetail = ref({});
 const lineChartRef = ref<HTMLElement | null>(null);
 const pieChartRef = ref<HTMLElement | null>(null);
 const funnelChartRef = ref<HTMLElement | null>(null);
-
+const funnelData = ref([]);
 let lineChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 let funnelChart: echarts.ECharts | null = null;
@@ -88,7 +88,7 @@ const renderCharts = () => {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月'],
+        data: overViewDetail.value.monthlys.map(item => item.label),
         axisLine: { lineStyle: { color: '#cbd5e1' } },
         axisLabel: { color: '#64748b' },
       },
@@ -105,7 +105,7 @@ const renderCharts = () => {
         smooth: true,
         symbol: 'circle',
         symbolSize: 6,
-        data: [120, 160, 190, 230, 210, 260, 320, 360],
+        data: overViewDetail.value.monthlys.map(item => item.value),
         lineStyle: { width: 3, color: '#4f46e5' },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
@@ -131,12 +131,7 @@ const renderCharts = () => {
         type: 'pie',
         radius: ['42%', '68%'],
         center: ['50%', '42%'],
-        data: [
-          { value: 35, name: '线上渠道', itemStyle: { color: '#4f46e5' } },
-          { value: 25, name: '门店转介绍', itemStyle: { color: '#22c55e' } },
-          { value: 18, name: '活动引流', itemStyle: { color: '#f59e0b' } },
-          { value: 12, name: '其他', itemStyle: { color: '#ef4444' } },
-        ],
+        data: overViewDetail.value.original,
         label: { color: '#64748b' },
       }],
     });
@@ -154,13 +149,7 @@ const renderCharts = () => {
         left: 'center',
         gap: 6,
         sort: 'descending',
-        data: [
-          { value: 1000, name: '线索量' },
-          { value: 780, name: '邀约量' },
-          { value: 580, name: '到店量' },
-          { value: 400, name: '成交量' },
-          { value: 250, name: '复购量' },
-        ],
+        data: funnelData.value,
         itemStyle: {
           borderColor: '#fff',
           borderWidth: 2,
@@ -178,18 +167,30 @@ const resizeCharts = () => {
   funnelChart?.resize();
 };
 
-onMounted(() => {
-  getDashboardData();
+onMounted(async () => {
+  await getDashboardData();
+  await getSalesFunnel();
   renderCharts();
   window.addEventListener('resize', resizeCharts);
 });
+/**获取漏斗 */
+const getSalesFunnel = async () => {
+  /**当前年1月1号 */
+  const startTime = new Date(new Date().getFullYear(), 0, 1);
+  const endTime = new Date();
+  const res = await dashboardApi.getSalesFunnel({
+    startTime,
+    endTime,
+  })
+  funnelData.value = res
+}
 /**获取看板数据 */
 const getDashboardData = async () => {
   const res = await dashboardApi.getOverview({});
-  console.log('res', res);
-  overViewForm.value = res;
+  overViewDetail.value = res;
 };
 
+/**获取看板数据 */
 onBeforeUnmount(() => {
   window.removeEventListener('resize', resizeCharts);
   lineChart?.dispose();

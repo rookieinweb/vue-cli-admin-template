@@ -1,7 +1,6 @@
 export default {
     blur: [
         { required: true, message: "此项为必填项", trigger: "blur" },
-        { min: 2, max: 10, message: "长度必须在 2 到 10 个字符之间", trigger: "blur" },
     ],
     change: [
         { required: true, message: "此项为必填项", trigger: "change" },

@@ -37,8 +37,8 @@
 
       <div class="section-block">
         <h3 class="section-title">客户标签</h3>
-        <div class="tag-list">
-          <el-tag v-for="tag in customerDetail.tags" :key="tag" type="success" effect="plain">
+        <div class="tag-list" v-if="customerDetail.remark">
+          <el-tag v-for="tag in customerDetail.remark.split('，')" :key="tag" type="success" effect="plain">
             {{ tag }}
           </el-tag>
         </div>
@@ -144,6 +144,7 @@ interface CustomerDetail {
   customer_source: string;
   customer_status: string;
   tags: string[];
+  remark:string;
   follows: FollowItem[];
 }
 
@@ -168,6 +169,7 @@ const customerDetail = ref<CustomerDetail>({
   customer_source: "-",
   customer_status: "-",
   tags: [],
+  remark:'',
   follows: [],
 });
 
@@ -188,6 +190,7 @@ async function getCustomerDetail() {
       phone: res.phone || "-",
       customer_source: res.customer_source || "-",
       customer_status: res.customer_status || "-",
+      remark:res.remark,
       tags: Array.isArray(res.tags) ? res.tags : [],
       follows: Array.isArray(res.follows) ? res.follows : [],
     };
