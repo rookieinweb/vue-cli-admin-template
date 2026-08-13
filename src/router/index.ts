@@ -100,6 +100,10 @@ function resolveDynamicRouteComponent(component: string) {
   }
 
   const normalizedComponent = normalizeComponentPath(component);
+  if (normalizedComponent === "website/editor") {
+    return () => import("@/views/website-editor/index.vue");
+  }
+
   return () => import(`@/views/${normalizedComponent}.vue`);
 }
 
@@ -202,6 +206,22 @@ function createFallbackMenu(): PermissionMenuNode[] {
           path: DEFAULT_HOME_PATH,
           component: "dashboard/DashboardView.vue",
           icon: "HomeFilled",
+        },
+      ],
+    },
+    {
+      name: "官网管理",
+      title: "官网管理",
+      path: "/website",
+      component: "Layout",
+      icon: "Document",
+      children: [
+        {
+          name: "website-editor",
+          title: "官网配置",
+          path: "/website/editor",
+          component: "website-editor/index.vue",
+          icon: "Document",
         },
       ],
     },
