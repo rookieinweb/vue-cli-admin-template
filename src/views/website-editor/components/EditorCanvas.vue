@@ -106,7 +106,7 @@ defineExpose({
   }
 
   :deep(.gjs-one-bg) {
-    background-color: #ffffff;
+    background-color: #ffffff !important;
   }
 
   :deep(.gjs-two-color) {

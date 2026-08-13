@@ -115,7 +115,9 @@ function handleDevice(device: "desktop" | "mobile") {
     border-top: 1px solid var(--app-border);
   }
 }
-
+:deep(.gjs-one-bg) {
+    background-color: #ffffff !important;
+  }
 @media (max-width: 1180px) {
   .website-editor {
     height: auto;

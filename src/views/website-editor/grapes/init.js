@@ -12,6 +12,11 @@ export function initWebsiteEditor(options) {
     blockManager: {
       appendTo: options.blocksContainer,
     },
+    parser: {
+      optionsHtml: {
+        allowUnsafeAttr: true,
+      },
+    },
     styleManager: {
       appendTo: options.styleContainer,
       sectors: [

@@ -93,21 +93,24 @@ function hasField(field: string) {
   return fieldMap[selectedType.value]?.includes(field) ?? true;
 }
 
-function getText(selector: string) {
-  return String(component.value?.find(selector)[0]?.get("content") || "");
+function getText(field: string) {
+  const selector = `[data-field="${field}"]`;
+  const matched = component.value?.find(selector);
+  return String(matched?.[0]?.get("content") || "");
 }
 
-function setText(selector: string, value: string) {
-  const target = component.value?.find(selector)[0];
-  target?.set({ content: value });
+function setText(field: string, value: string) {
+  const selector = `[data-field="${field}"]`;
+  const matched = component.value?.find(selector);
+  matched?.[0]?.set({ content: value });
 }
 
 function syncForm() {
   if (!component.value) return;
 
-  form.title = getText(".js-title");
-  form.subtitle = getText(".js-subtitle");
-  form.buttonText = getText(".js-button");
+  form.title = getText("js-title");
+  form.subtitle = getText("js-subtitle");
+  form.buttonText = getText("js-button");
   form.image = String(component.value.get("image") || "");
   form.background = String(component.value.get("background") || "#ffffff");
   form.height = String(component.value.get("height") || "");
@@ -127,9 +130,9 @@ function updateSelected() {
     ...(form.height ? { minHeight: form.height } : {}),
   });
 
-  setText(".js-title", form.title);
-  setText(".js-subtitle", form.subtitle);
-  setText(".js-button", form.buttonText);
+  setText("js-title", form.title);
+  setText("js-subtitle", form.subtitle);
+  setText("js-button", form.buttonText);
 }
 
 watch(
