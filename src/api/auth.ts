@@ -39,6 +39,6 @@ export async function registerApi(form: RegisterForm) {
   return request.post<null>("/user/register", payload);
 }
 
-export async function getUsersApi(params: { id?: number }) {
+export async function getUsersApi(params: { id?: number; role_id?: number }) {
   return request.get<UserProfile[]>("/user", params);
 }

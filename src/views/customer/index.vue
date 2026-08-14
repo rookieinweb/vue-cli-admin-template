@@ -32,7 +32,12 @@
               style="width: 120px"
             >
               <el-option label="全部" value="" />
-              <el-option v-for="item in customerStauts" :key="item.value" :label="item.label" :value="item.value" />
+              <el-option
+                v-for="item in customerStauts"
+                :key="item.value"
+                :label="item.label"
+                :value="item.value"
+              />
             </el-select>
           </el-form-item>
 
@@ -47,14 +52,28 @@
         <el-table-column prop="customer_name" label="客户姓名" />
         <el-table-column prop="phone" label="手机号" />
         <el-table-column prop="customer_source" label="来源" />
-        <el-table-column prop="customer_status" label="状态" :formatter="formatCustomerStatus" />
+        <el-table-column
+          prop="customer_status"
+          label="状态"
+          :formatter="formatCustomerStatus"
+        />
         <el-table-column prop="owner.username" label="负责人" />
         <el-table-column prop="remark" label="备注" />
         <el-table-column prop="create_time" label="创建时间" />
         <el-table-column label="操作" width="150">
           <template #default="scope">
-            <el-button type="text" size="small" @click="goToDetail(scope.row.id)">查看</el-button>
-            <el-button type="text" size="small" @click="openUpdateDialog(scope.row)">更新</el-button>
+            <el-button
+              type="text"
+              size="small"
+              @click="goToDetail(scope.row.id)"
+              >查看</el-button
+            >
+            <el-button
+              type="text"
+              size="small"
+              @click="openUpdateDialog(scope.row)"
+              >更新</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -71,15 +90,26 @@
       </div>
     </el-card>
 
-    <el-dialog v-model="dialogVisible" :title="customerForm.id ? '更新客户' : '新增客户'" width="560px">
+    <el-dialog
+      v-model="dialogVisible"
+      :title="customerForm.id ? '更新客户' : '新增客户'"
+      width="560px"
+    >
       <el-form
         :model="customerForm"
         label-width="90px"
         ref="createForm"
         :rules="validate"
       >
-        <el-form-item label="客户姓名" prop="customerName" :rules="validate.blur">
-          <el-input v-model="customerForm.customerName" placeholder="请输入客户姓名" />
+        <el-form-item
+          label="客户姓名"
+          prop="customerName"
+          :rules="validate.blur"
+        >
+          <el-input
+            v-model="customerForm.customerName"
+            placeholder="请输入客户姓名"
+          />
         </el-form-item>
 
         <el-form-item label="手机号" prop="phone" :rules="validate.phone">
@@ -105,19 +135,27 @@
             placeholder="请选择状态"
             style="width: 100%"
           >
-            <el-option v-for="item in customerStauts" :key="item.value" :label="item.label" :value="item.value" />
+            <el-option
+              v-for="item in customerStauts"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
           </el-select>
         </el-form-item>
-        
-        <el-form-item label="负责人" prop="manager" :rules="validate.change">
+
+        <el-form-item label="负责人" prop="owner_id" :rules="validate.change">
           <el-select
-            v-model="customerForm.manager"
+            v-model="customerForm.owner_id"
             placeholder="请选择负责人"
             style="width: 100%"
           >
-            <el-option label="销售A" value="销售A" />
-            <el-option label="销售B" value="销售B" />
-            <el-option label="销售C" value="销售C" />
+            <el-option
+              v-for="(item, index) of salesList"
+              :key="index"
+              :label="item.username"
+              :value="item.id"
+            />
           </el-select>
         </el-form-item>
 
@@ -154,6 +192,7 @@ import { ElMessage } from "element-plus";
 import type { FormInstance } from "element-plus";
 import validate from "@/utils/validate";
 import customerApi from "@/api/customer";
+import { getUsersApi } from "@/api/auth";
 import { CUSTOMER_STATUS_MAP } from "@/utils/menu";
 
 interface CustomerItem {
@@ -178,7 +217,6 @@ const searchForm = reactive({
   customer_name: "",
   phone: "",
   customer_status: "",
-
 });
 const createForm = ref<FormInstance>();
 
@@ -191,13 +229,16 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
 });
-const customerStauts = ref(Object.keys(CUSTOMER_STATUS_MAP).map(key => ({
-  label: CUSTOMER_STATUS_MAP[key],
-  value: key,
-})));
+const customerStauts = ref(
+  Object.keys(CUSTOMER_STATUS_MAP).map((key) => ({
+    label: CUSTOMER_STATUS_MAP[key],
+    value: key,
+  })),
+);
 const customers = ref<CustomerItem[]>([]);
-
+const salesList = ref<UserItem[]>([]);
 onMounted(async () => {
+  getSalesList();
   listCustomer();
 });
 const orginalForm = reactive({
@@ -206,13 +247,19 @@ const orginalForm = reactive({
   phone: "",
   source: "微信",
   status: "potential",
-  manager: "销售A",
+  owner_id: "",
   remark: "",
 });
-const customerForm = reactive({...orginalForm});
+const customerForm = reactive({ ...orginalForm });
 
 function formatCustomerStatus(row: CustomerItem) {
-  return CUSTOMER_STATUS_MAP[row.customer_status || 'potential'] || '未知';
+  return CUSTOMER_STATUS_MAP[row.customer_status || "potential"] || "未知";
+}
+/**获取销售列表 */
+async function getSalesList() {
+  const res = await getUsersApi({ role_id: 2 });
+  salesList.value = res;
+  console.log("salesList", salesList.value);
 }
 /**获取客户列表 */
 async function listCustomer() {
@@ -253,7 +300,7 @@ function openUpdateDialog(row: CustomerItem) {
   customerForm.phone = row.phone || "";
   customerForm.source = row.customer_source || "微信";
   customerForm.status = row.customer_status || "potential";
-  customerForm.manager = row.owner?.username || "销售A";
+  customerForm.owner_id = row.owner?.id || "";
   customerForm.remark = row.remark || "";
   dialogVisible.value = true;
 }
