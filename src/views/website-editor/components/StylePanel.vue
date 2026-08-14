@@ -36,8 +36,9 @@
         </el-form>
 
         <el-divider>样式</el-divider>
-        <div id="style-manager" class="style-panel__manager"></div>
       </template>
+      
+        <div v-show="selectedComponent" id="style-manager" class="style-panel__manager"></div>
     </div>
   </aside>
 </template>
@@ -90,6 +91,7 @@ const fieldMap: Record<string, string[]> = {
 };
 
 function hasField(field: string) {
+  console.log(222222222222222222)
   return fieldMap[selectedType.value]?.includes(field) ?? true;
 }
 
@@ -107,7 +109,7 @@ function setText(field: string, value: string) {
 
 function syncForm() {
   if (!component.value) return;
-
+  console.log('componentcomponentcomponentcomponent')
   form.title = getText("js-title");
   form.subtitle = getText("js-subtitle");
   form.buttonText = getText("js-button");
@@ -118,7 +120,7 @@ function syncForm() {
 
 function updateSelected() {
   if (!component.value) return;
-
+  console.log('component.value========================',component.value.find('.js-title')[0]?.set({ text: form.title }),form.title)
   component.value.set({
     image: form.image,
     background: form.background,
@@ -127,7 +129,7 @@ function updateSelected() {
 
   component.value.addStyle({
     background: form.background,
-    ...(form.height ? { minHeight: form.height } : {}),
+    ...(form.height ? {'min-height': form.height } : {}),
   });
 
   setText("js-title", form.title);

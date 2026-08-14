@@ -19,23 +19,55 @@ export function initWebsiteEditor(options) {
     },
     styleManager: {
       appendTo: options.styleContainer,
-      sectors: [
+
+  componentFirst:true,
+      sectors:[
         {
-          name: "尺寸",
-          open: true,
-          properties: ["width", "min-height", "padding", "margin"],
+        name:"布局",
+        open:false,
+        properties:[
+          "width",
+          "min-height",
+          "padding",
+          "margin",
+          "display",
+          "justify-content",
+          "align-items"
+        ]
         },
+
         {
-          name: "文字",
-          open: false,
-          properties: ["font-size", "font-weight", "color", "line-height", "text-align"],
+        name:"文字",
+        open:false,
+        properties:[
+          "font-size",
+          "font-weight",
+          "color",
+          "line-height",
+          "text-align"
+        ]
         },
+
         {
-          name: "装饰",
-          open: false,
-          properties: ["background-color", "border-radius", "box-shadow"],
+        name:"背景",
+        open:false,
+        properties:[
+          "background-color",
+          "background-image",
+          "background-size"
+        ]
         },
-      ],
+
+        {
+        name:"边框",
+        open:false,
+        properties:[
+          "border-radius",
+          "border",
+          "box-shadow"
+        ]
+        }
+      ]
     },
     selectorManager: { appendTo: null },
     traitManager: { appendTo: null },
@@ -55,6 +87,8 @@ export function initWebsiteEditor(options) {
 
   registerComponents(editor);
   registerBlocks(editor);
-
+  editor.on('load',()=>{
+    console.log('style===================================',editor.BlockManager.getBlocksByCategory())
+  })
   return editor;
 }
