@@ -12,7 +12,12 @@
     </header>
 
     <section class="stats-grid">
-      <el-card v-for="item in stats" :key="item.label" class="stat-card" shadow="never">
+      <el-card
+        v-for="item in stats"
+        :key="item.label"
+        class="stat-card"
+        shadow="never"
+      >
         <div class="stat-card__label">{{ item.label }}</div>
         <div class="stat-card__value">{{ overViewDetail[item.value] }}</div>
         <div class="stat-card__tip">{{ item.tip }}</div>
@@ -45,30 +50,30 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue';
-import * as echarts from 'echarts';
-import dashboardApi from '@/api/dashboard';
+import { onBeforeUnmount, onMounted, ref } from "vue";
+import * as echarts from "echarts";
+import dashboardApi from "@/api/dashboard";
 
 const stats = [
   {
-    label: '客户总数',
-    value: 'effectiveTotal',
-    tip: '累计有效客户',
+    label: "客户总数",
+    value: "effectiveTotal",
+    tip: "累计有效客户",
   },
   {
-    label: '今日新增',
-    value: 'todayCreateNum',
-    tip: '新增客户数量',
+    label: "今日新增",
+    value: "todayCreateNum",
+    tip: "新增客户数量",
   },
   {
-    label: '待跟进',
-    value: 'todayFollowNum',
-    tip: '需今日回访',
+    label: "待跟进",
+    value: "todayFollowNum",
+    tip: "需今日回访",
   },
   {
-    label: '成交客户',
-    value: 'MonthlyTransactionVolume',
-    tip: '本月已成交',
+    label: "成交客户",
+    value: "MonthlyTransactionVolume",
+    tip: "本月已成交",
   },
 ];
 const overViewDetail = ref({});
@@ -86,77 +91,83 @@ const renderCharts = () => {
     lineChart.setOption({
       grid: { left: 24, right: 12, top: 20, bottom: 32 },
       xAxis: {
-        type: 'category',
+        type: "category",
         boundaryGap: false,
-        data: overViewDetail.value.monthlys.map(item => item.label),
-        axisLine: { lineStyle: { color: '#cbd5e1' } },
-        axisLabel: { color: '#64748b' },
+        data: overViewDetail.value.monthlys.map((item) => item.label),
+        axisLine: { lineStyle: { color: "#cbd5e1" } },
+        axisLabel: { color: "#64748b" },
       },
       yAxis: {
-        type: 'value',
+        type: "value",
         axisLine: { show: false },
-        splitLine: { lineStyle: { color: '#e2e8f0' } },
-        axisLabel: { color: '#64748b' },
+        splitLine: { lineStyle: { color: "#e2e8f0" } },
+        axisLabel: { color: "#64748b" },
       },
-      tooltip: { trigger: 'axis' },
-      series: [{
-        name: '客户增长',
-        type: 'line',
-        smooth: true,
-        symbol: 'circle',
-        symbolSize: 6,
-        data: overViewDetail.value.monthlys.map(item => item.value),
-        lineStyle: { width: 3, color: '#4f46e5' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(79, 70, 229, 0.32)' },
-            { offset: 1, color: 'rgba(79, 70, 229, 0.04)' },
-          ]),
+      tooltip: { trigger: "axis" },
+      series: [
+        {
+          name: "客户增长",
+          type: "line",
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 6,
+          data: overViewDetail.value.monthlys.map((item) => item.value),
+          lineStyle: { width: 3, color: "#4f46e5" },
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: "rgba(79, 70, 229, 0.32)" },
+              { offset: 1, color: "rgba(79, 70, 229, 0.04)" },
+            ]),
+          },
         },
-      }],
+      ],
     });
   }
 
   if (pieChartRef.value) {
     pieChart = echarts.init(pieChartRef.value);
     pieChart.setOption({
-      tooltip: { trigger: 'item' },
+      tooltip: { trigger: "item" },
       legend: {
         bottom: 0,
         itemWidth: 10,
         itemHeight: 10,
-        textStyle: { color: '#475569' },
+        textStyle: { color: "#475569" },
       },
-      series: [{
-        type: 'pie',
-        radius: ['42%', '68%'],
-        center: ['50%', '42%'],
-        data: overViewDetail.value.original,
-        label: { color: '#64748b' },
-      }],
+      series: [
+        {
+          type: "pie",
+          radius: ["42%", "68%"],
+          center: ["50%", "42%"],
+          data: overViewDetail.value.original,
+          label: { color: "#64748b" },
+        },
+      ],
     });
   }
 
   if (funnelChartRef.value) {
     funnelChart = echarts.init(funnelChartRef.value);
     funnelChart.setOption({
-      tooltip: { trigger: 'item' },
-      series: [{
-        type: 'funnel',
-        width: '90%',
-        height: '80%',
-        top: '10%',
-        left: 'center',
-        gap: 6,
-        sort: 'descending',
-        data: funnelData.value,
-        itemStyle: {
-          borderColor: '#fff',
-          borderWidth: 2,
+      tooltip: { trigger: "item" },
+      series: [
+        {
+          type: "funnel",
+          width: "90%",
+          height: "80%",
+          top: "10%",
+          left: "center",
+          gap: 6,
+          sort: "descending",
+          data: funnelData.value,
+          itemStyle: {
+            borderColor: "#fff",
+            borderWidth: 2,
+          },
+          label: { color: "#111827", fontWeight: 700 },
+          emphasis: { itemStyle: { opacity: 0.9 } },
         },
-        label: { color: '#111827', fontWeight: 700 },
-        emphasis: { itemStyle: { opacity: 0.9 } },
-      }],
+      ],
     });
   }
 };
@@ -171,7 +182,7 @@ onMounted(async () => {
   await getDashboardData();
   await getSalesFunnel();
   renderCharts();
-  window.addEventListener('resize', resizeCharts);
+  window.addEventListener("resize", resizeCharts);
 });
 /**获取漏斗 */
 const getSalesFunnel = async () => {
@@ -181,9 +192,9 @@ const getSalesFunnel = async () => {
   const res = await dashboardApi.getSalesFunnel({
     startTime,
     endTime,
-  })
-  funnelData.value = res
-}
+  });
+  funnelData.value = res;
+};
 /**获取看板数据 */
 const getDashboardData = async () => {
   const res = await dashboardApi.getOverview({});
@@ -192,7 +203,7 @@ const getDashboardData = async () => {
 
 /**获取看板数据 */
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', resizeCharts);
+  window.removeEventListener("resize", resizeCharts);
   lineChart?.dispose();
   pieChart?.dispose();
   funnelChart?.dispose();
@@ -316,7 +327,6 @@ onBeforeUnmount(() => {
 .panel--chart {
   padding: 16px;
 }
-
 
 @media (max-width: 960px) {
   .stats-grid,
