@@ -103,11 +103,11 @@
       >
         <el-form-item
           label="客户姓名"
-          prop="customerName"
+          prop="customer_name"
           :rules="validate.blur"
         >
           <el-input
-            v-model="customerForm.customerName"
+            v-model="customerForm.customer_name"
             placeholder="请输入客户姓名"
           />
         </el-form-item>
@@ -116,9 +116,13 @@
           <el-input v-model="customerForm.phone" placeholder="请输入手机号" />
         </el-form-item>
 
-        <el-form-item label="客户来源" prop="source" :rules="validate.change">
+        <el-form-item
+          label="客户来源"
+          prop="customer_source"
+          :rules="validate.change"
+        >
           <el-select
-            v-model="customerForm.source"
+            v-model="customerForm.customer_source"
             placeholder="请选择来源"
             style="width: 100%"
           >
@@ -129,9 +133,13 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="客户状态" prop="status" :rules="validate.change">
+        <el-form-item
+          label="客户状态"
+          prop="customer_status"
+          :rules="validate.change"
+        >
           <el-select
-            v-model="customerForm.status"
+            v-model="customerForm.customer_status"
             placeholder="请选择状态"
             style="width: 100%"
           >
@@ -139,6 +147,7 @@
               v-for="item in customerStauts"
               :key="item.value"
               :label="item.label"
+              :disabled="item.disabled"
               :value="item.value"
             />
           </el-select>
@@ -158,7 +167,13 @@
             />
           </el-select>
         </el-form-item>
-
+        <!-- deal -->
+        <el-form-item label="成交金额" v-if="customerForm.customer_status == 'deal'" prop="deal_amount" :rules="validate.change">
+          <el-input
+            v-model="customerForm.deal_amount"
+            placeholder="请输入成交金额"
+          />
+        </el-form-item>
         <el-form-item label="备注" prop="remark" :rules="validate.blur">
           <el-input
             v-model="customerForm.remark"
@@ -186,7 +201,7 @@ export default {
 </script>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from "vue";
+import { computed, reactive, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { FormInstance } from "element-plus";
@@ -204,6 +219,7 @@ interface CustomerItem {
   owner?: { username?: string };
   remark?: string;
   create_time?: string;
+  deal_amount?: number;
 }
 
 interface CustomerListResult {
@@ -229,12 +245,24 @@ const pagination = reactive({
   pageSize: 10,
   total: 0,
 });
-const customerStauts = ref(
-  Object.keys(CUSTOMER_STATUS_MAP).map((key) => ({
-    label: CUSTOMER_STATUS_MAP[key],
-    value: key,
-  })),
-);
+const customerStauts = computed(() => {
+  let globalDisabledKey = null;
+  return Object.keys(CUSTOMER_STATUS_MAP).map((key) => {
+    if (customerForm.customer_status) {
+      if (customerForm.customer_status === key) {
+        globalDisabledKey = key;
+      }
+    } else {
+      globalDisabled = "potential";
+    }
+    return {
+      label: (CUSTOMER_STATUS_MAP as any)[key],
+      value: key,
+      disabled: !globalDisabledKey,
+    };
+  });
+});
+const chooseDisabled = ref(true);
 const customers = ref<CustomerItem[]>([]);
 const salesList = ref<UserItem[]>([]);
 onMounted(async () => {
@@ -243,12 +271,13 @@ onMounted(async () => {
 });
 const orginalForm = reactive({
   id: null,
-  customerName: "",
+  customer_name: "",
   phone: "",
-  source: "微信",
-  status: "potential",
+  customer_source: "微信",
+  customer_status: "potential",
   owner_id: "",
   remark: "",
+  deal_amount: 0,
 });
 const customerForm = reactive({ ...orginalForm });
 
@@ -295,16 +324,17 @@ function resetSearch() {
 }
 /** 打开更新客户弹窗 */
 function openUpdateDialog(row: CustomerItem) {
+  chooseDisabled.value = true;
   customerForm.id = row.id;
-  customerForm.customerName = row.customer_name || "";
+  customerForm.customer_name = row.customer_name || "";
   customerForm.phone = row.phone || "";
-  customerForm.source = row.customer_source || "微信";
-  customerForm.status = row.customer_status || "potential";
+  customerForm.customer_source = row.customer_source || "微信";
+  customerForm.customer_status = row.customer_status || "potential";
   customerForm.owner_id = row.owner?.id || "";
   customerForm.remark = row.remark || "";
+  customerForm.deal_amount = row.deal_amount || 0;
   dialogVisible.value = true;
 }
-
 function openCreateDialog() {
   Object.assign(customerForm, orginalForm);
   dialogVisible.value = true;
