@@ -93,7 +93,7 @@
     <el-dialog
       v-model="dialogVisible"
       :title="customerForm.id ? '更新客户' : '新增客户'"
-      width="560px"
+      width="720px"
     >
       <el-form
         :model="customerForm"
@@ -153,6 +153,46 @@
           </el-select>
         </el-form-item>
 
+        <el-form-item label="客户级别" prop="customer_level">
+          <el-select
+            v-model="customerForm.customer_level"
+            placeholder="请选择状态"
+            style="width: 100%"
+          >
+            <el-option label="优质" value="A" />
+            <el-option label="良好" value="B" />
+            <el-option label="普通" value="C" />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="产品名称" prop="product_name">
+          <el-input
+            v-model="customerForm.product_name"
+            placeholder="请输入产品名称"
+          />
+        </el-form-item>
+
+        <el-form-item label="省市" prop="province">
+          <el-cascader
+            v-model="customerArea"
+            :options="pcTextArr"
+            placeholder="请选择省市"
+            clearable
+            filterable
+            style="width: 100%"
+            @change="handleAreaChange"
+          />
+        </el-form-item>
+
+        <el-form-item label="详细地址" prop="address">
+          <el-input
+            v-model="customerForm.address"
+            type="textarea"
+            :rows="2"
+            placeholder="请输入详细地址"
+          />
+        </el-form-item>
+
         <el-form-item label="负责人" prop="owner_id" :rules="validate.change">
           <el-select
             v-model="customerForm.owner_id"
@@ -205,6 +245,7 @@ import { computed, reactive, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import type { FormInstance } from "element-plus";
+import { pcTextArr } from "element-china-area-data";
 import validate from "@/utils/validate";
 import customerApi from "@/api/customer";
 import { getUsersApi } from "@/api/auth";
@@ -216,10 +257,20 @@ interface CustomerItem {
   phone?: string;
   customer_source?: string;
   customer_status?: string;
-  owner?: { username?: string };
+  customer_level?: string;
+  product_name?: string;
+  province?: string;
+  city?: string;
+  address?: string;
+  owner?: { id?: number; username?: string };
   remark?: string;
   create_time?: string;
   deal_amount?: number;
+}
+
+interface UserItem {
+  id: number;
+  username: string;
 }
 
 interface CustomerListResult {
@@ -275,11 +326,17 @@ const orginalForm = reactive({
   phone: "",
   customer_source: "微信",
   customer_status: "potential",
+  customer_level: "",
+  product_name: "",
+  province: "",
+  city: "",
+  address: "",
   owner_id: "",
   remark: "",
   deal_amount: 0,
 });
 const customerForm = reactive({ ...orginalForm });
+const customerArea = ref<string[]>([]);
 
 function formatCustomerStatus(row: CustomerItem) {
   return CUSTOMER_STATUS_MAP[row.customer_status || "potential"] || "未知";
@@ -330,6 +387,12 @@ function openUpdateDialog(row: CustomerItem) {
   customerForm.phone = row.phone || "";
   customerForm.customer_source = row.customer_source || "微信";
   customerForm.customer_status = row.customer_status || "potential";
+  customerForm.customer_level = row.customer_level || "";
+  customerForm.product_name = row.product_name || "";
+  customerForm.province = row.province || "";
+  customerForm.city = row.city || "";
+  customerForm.address = row.address || "";
+  syncCustomerAreaFromForm();
   customerForm.owner_id = row.owner?.id || "";
   customerForm.remark = row.remark || "";
   customerForm.deal_amount = row.deal_amount || 0;
@@ -337,6 +400,7 @@ function openUpdateDialog(row: CustomerItem) {
 }
 function openCreateDialog() {
   Object.assign(customerForm, orginalForm);
+  syncCustomerAreaFromForm();
   dialogVisible.value = true;
 }
 
@@ -349,6 +413,16 @@ function handleCurrentChange(val: number) {
   pagination.page = val;
   pagination.currentPage = val;
   listCustomer();
+}
+function handleAreaChange(value: string[]) {
+  customerForm.province = value?.[0] || "";
+  customerForm.city = value?.[1] || "";
+}
+
+function syncCustomerAreaFromForm() {
+  customerArea.value = customerForm.province && customerForm.city
+    ? [customerForm.province, customerForm.city]
+    : [];
 }
 const closeCreateDialog = () => {
   dialogVisible.value = false;
